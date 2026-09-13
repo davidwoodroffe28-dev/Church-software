@@ -80,10 +80,24 @@ Never below 9.5px, and only ever mono at that size. Body text never below 12.5px
 - **Grid:** 4px base. Padding steps 8 / 10 / 12 / 14 / 16 / 18 / 22 / 26.
 - **Radii:** 6px chips and swatches · 7–8px buttons and rows · 10px monitors ·
   13–14px cards and containers · 20px filter pills.
-- **Depth:** one shadow token only —
-  `0 1px 2px rgba(0,0,0,.28), 0 10px 30px rgba(0,0,0,.30)` (dark) /
-  `0 1px 2px rgba(28,32,38,.05), 0 8px 24px rgba(28,32,38,.07)` (light).
-  Cards and monitors get it. Panels and rows do not.
+- **Depth:** three shadow tokens, each with a job — never invent a fourth.
+  - `--shadow-raised` (cards, monitors, open menus/modals — things that float above the page):
+    `0 1px 2px rgba(0,0,0,.28), 0 10px 30px rgba(0,0,0,.30)` (dark) /
+    `0 1px 2px rgba(28,32,38,.05), 0 8px 24px rgba(28,32,38,.07)` (light).
+  - `--shadow-control` (buttons, toggles, chips — things a hand presses; reads as "sitting just
+    above the panel," tighter and closer than `--shadow-raised`):
+    `0 1px 0 rgba(255,255,255,.05) inset, 0 1px 2px rgba(0,0,0,.35)` (dark) /
+    `0 1px 0 rgba(255,255,255,.7) inset, 0 1px 2px rgba(28,32,38,.14)` (light).
+  - `--shadow-well` (text inputs, textareas, selects — things a hand types into; inset, reads as
+    "pressed into the panel," the opposite direction from `--shadow-control`):
+    `inset 0 1px 3px rgba(0,0,0,.4)` (dark) / `inset 0 1px 2px rgba(28,32,38,.16)` (light).
+  Panels and rows still get none of these — depth stays reserved for things a hand actually
+  presses, types into, or that float above content.
+- **Interactive-surface highlight:** buttons, toggle tracks, and chips may carry a faint
+  top-to-bottom lightness gradient (`rgba(255,255,255,.05)` to transparent, dark; `rgba(255,255,255,.5)`
+  to transparent, light — never a hue shift, never past that alpha) to read as a physical, pressable
+  control, paired with `--shadow-control`. This is the ONE place gradients are allowed — `--bg`,
+  `--panel`, `--panel2`, and card/monitor fills stay flat, still max two background values per screen.
 - **Layout:** always flex/grid with `gap`. Never margin-spaced siblings.
 - **Hit targets:** minimum 44px tall for anything touched during a service —
   transport arrows, Black/Clear/Logo, Send to Live, tab buttons.
@@ -146,8 +160,13 @@ monitor      16:9 output with song credits in the corner
 | Toggle on | track `--accent`, knob flush right |
 | Card hover | `--accent` border, `translateY(-1px)`, 140ms ease |
 
-Transitions are 140ms and only on colour, border, and 1px lifts. Nothing slides,
-fades, or bounces — the operator's eye must stay on the lyric.
+Two speeds. **Chrome** (buttons, toggles, tabs, chips, cards, modals — anything that isn't the
+lyric/slide content itself) transitions at 120–160ms on colour, border, `box-shadow`, and small
+(≤2px) transforms: a button eases from `--shadow-control` to flat on press, a screen crossfades in
+on tab switch. **Output** (the slide monitor, the on-air row, Preview/Live panes, anything that
+changes what the room sees or previews it) stays exactly as strict as before: colour, border, and
+1px lifts only, 140ms, nothing sliding, fading, or bouncing — the operator's eye must stay on the
+lyric.
 
 **Keyboard:** `← →` advance live · `B` black · `Esc` clear. Suppressed while typing.
 Every keyboard action has a visible button; the shortcuts are shown in the status bar.

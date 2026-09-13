@@ -19,23 +19,31 @@ body {
 
 button {
   cursor: pointer;
-  background: var(--panel2);
+  background-color: var(--panel2);
+  background-image: var(--control-highlight);
   color: var(--ink);
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
   padding: 6px 10px;
   font-size: 13px;
   font-family: inherit;
+  box-shadow: var(--shadow-control);
+  transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 100ms ease;
 }
 button:hover:not(:disabled) {
-  background: var(--hover);
+  background-color: var(--hover);
+}
+button:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: var(--shadow-control-pressed);
 }
 button:disabled {
   opacity: 0.4;
   cursor: default;
 }
 button.primary {
-  background: var(--accent);
+  background-color: var(--accent);
+  background-image: var(--control-highlight-strong);
   border-color: var(--accent);
   color: var(--screen);
   font-weight: 600;
@@ -45,13 +53,15 @@ button.primary:hover:not(:disabled) {
 }
 
 input, textarea, select {
-  background: var(--input);
+  background-color: var(--input);
   color: var(--ink);
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
   padding: 7px 10px;
   font-size: 13px;
   font-family: inherit;
+  box-shadow: var(--shadow-well);
+  transition: border-color 140ms ease, box-shadow 140ms ease;
 }
 
 select {
@@ -147,6 +157,20 @@ label {
   min-height: 0;
   display: flex;
 }
+/* Chrome transition (DESIGN-SPEC.md §6): a quick crossfade when switching tabs. Each screen
+   component mounts fresh on tab change (App.tsx swaps them via conditional rendering), so this
+   fires once per tab switch — it never touches slide-to-slide content inside a screen. */
+.app-screen > * {
+  animation: screen-fade-in 160ms ease;
+}
+@keyframes screen-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 
 /* ---------- title bar ---------- */
 
@@ -226,21 +250,25 @@ label {
   border-bottom: 1px solid var(--line);
 }
 .nav-tab {
-  background: transparent;
+  background-color: transparent;
+  background-image: none;
   border: 1px solid transparent;
   color: var(--ink2);
   font-size: 13px;
   padding: 8px 14px;
   border-radius: var(--radius-control);
+  box-shadow: none;
 }
 .nav-tab:hover:not(.active) {
-  background: var(--hover);
+  background-color: var(--hover);
 }
 .nav-tab.active {
-  background: var(--panel2);
+  background-color: var(--panel2);
+  background-image: var(--control-highlight);
   border-color: var(--accent);
   color: var(--ink);
   font-weight: 500;
+  box-shadow: var(--shadow-control);
 }
 
 /* ---------- status bar ---------- */
@@ -362,12 +390,16 @@ label {
   padding: 5px 12px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--line);
-  background: transparent;
+  background-color: transparent;
+  background-image: none;
   color: var(--ink2);
+  box-shadow: none;
 }
 .filter-pill-active {
   color: var(--ink);
-  background: var(--panel2);
+  background-color: var(--panel2);
+  background-image: var(--control-highlight);
+  box-shadow: var(--shadow-control);
 }
 .library-list {
   flex: 1;
@@ -440,6 +472,7 @@ label {
   color: var(--ink2);
   background: transparent;
   border: 1px solid var(--line);
+  box-shadow: none;
 }
 .row-add:hover, .row-icon-btn:hover, .row-remove:hover {
   background: var(--hover);
@@ -566,6 +599,10 @@ label {
   padding: 0;
   color: var(--ink3);
   font-size: 11px;
+  box-shadow: none;
+}
+.take-off-air:active {
+  transform: none;
 }
 .take-off-air:hover {
   color: var(--ink);
@@ -587,9 +624,12 @@ label {
   padding: var(--sp-5) var(--sp-2);
 }
 .slide-row {
+  /* Output content (DESIGN-SPEC.md §6): stays on the strict colour/border-only transition rule,
+     never the chrome highlight/shadow/press treatment other buttons get. */
   min-height: 170px;
   border-radius: var(--radius-control);
-  background: var(--panel2);
+  background-color: var(--panel2);
+  background-image: none;
   border: 1px solid transparent;
   padding: var(--sp-4);
   display: flex;
@@ -599,9 +639,14 @@ label {
   color: inherit;
   font-family: inherit;
   flex-shrink: 0;
+  box-shadow: none;
+  transition: background-color 140ms ease, border-color 140ms ease;
 }
 .slide-row:hover {
-  background: var(--hover);
+  background-color: var(--hover);
+}
+.slide-row:active {
+  transform: none;
 }
 .slide-row-active-preview {
   border-color: var(--accent);
@@ -663,7 +708,8 @@ label {
 .send-to-live {
   flex: 1;
   height: 44px;
-  background: var(--accent);
+  background-color: var(--accent);
+  background-image: var(--control-highlight-strong);
   border: none;
   color: var(--screen);
   font-weight: 600;
@@ -678,12 +724,13 @@ label {
   font-size: 12.5px;
 }
 .toggle-btn-active {
-  background: var(--live);
+  background-color: var(--live);
+  background-image: var(--control-highlight-strong);
   border-color: var(--live);
   color: #ffffff;
 }
 .toggle-btn-active:hover:not(:disabled) {
-  background: var(--live);
+  background-color: var(--live);
   filter: brightness(1.05);
 }
 
@@ -791,11 +838,16 @@ label {
   padding: 0;
   border: none;
   border-radius: 10px;
-  background: var(--line);
-  transition: background 140ms ease;
+  background-color: var(--line);
+  background-image: none;
+  box-shadow: var(--shadow-well);
+  transition: background-color 140ms ease, box-shadow 140ms ease;
+}
+.toggle-switch:active:not(:disabled) {
+  transform: none;
 }
 .toggle-switch-on {
-  background: var(--accent);
+  background-color: var(--accent);
 }
 .toggle-knob {
   position: absolute;
@@ -804,7 +856,9 @@ label {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #ffffff;
+  background-color: #ffffff;
+  background-image: linear-gradient(180deg, #ffffff, #f0f0f0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
   transition: left 140ms ease;
 }
 .toggle-switch-on .toggle-knob {
@@ -943,17 +997,21 @@ label {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: var(--panel);
+  background-color: var(--panel);
+  background-image: none;
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
   padding: var(--sp-6) var(--sp-7);
   box-shadow: var(--shadow-raised);
-  transition: border-color 140ms ease, transform 140ms ease;
+  transition: border-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
 }
 .continue-card:hover {
   border-color: var(--accent);
   transform: translateY(-1px);
-  background: var(--panel);
+}
+.continue-card:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-raised);
 }
 .continue-card-label {
   font-size: 10.5px;
@@ -988,19 +1046,24 @@ label {
   flex-direction: column;
   align-items: flex-start;
   gap: var(--sp-3);
-  background: var(--panel);
+  background-color: var(--panel);
+  background-image: none;
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
   padding: var(--sp-5);
   font-size: 13.5px;
   font-weight: 500;
   color: var(--ink);
+  box-shadow: var(--shadow-raised);
   transition: border-color 140ms ease, transform 140ms ease;
 }
 .action-card:hover {
   border-color: var(--accent);
   transform: translateY(-1px);
-  background: var(--panel);
+}
+.action-card:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-raised);
 }
 .action-card-icon {
   display: flex;
@@ -1195,6 +1258,7 @@ label {
   padding: var(--sp-2) var(--sp-3);
   font-size: 13.5px;
   color: var(--ink2);
+  box-shadow: none;
 }
 .book-row:hover {
   background: var(--hover);
@@ -1227,7 +1291,8 @@ label {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--panel2);
+  background-color: var(--panel2);
+  background-image: var(--control-highlight);
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
   font-size: 13px;
@@ -1235,10 +1300,11 @@ label {
   padding: 0;
 }
 .chapter-chip:hover {
-  background: var(--hover);
+  background-color: var(--hover);
 }
 .chapter-chip-active {
-  background: var(--accent);
+  background-color: var(--accent);
+  background-image: var(--control-highlight-strong);
   border-color: var(--accent);
   color: var(--screen);
   font-weight: 600;
@@ -1441,7 +1507,8 @@ label {
   font-size: 12.5px;
 }
 .align-btn-active {
-  background: var(--accent);
+  background-color: var(--accent);
+  background-image: var(--control-highlight-strong);
   border-color: var(--accent);
   color: var(--screen);
   font-weight: 600;
@@ -1472,6 +1539,7 @@ label {
   padding: var(--sp-2) var(--sp-3);
   font-size: 13.5px;
   color: var(--ink2);
+  box-shadow: none;
 }
 .settings-category:hover {
   background: var(--hover);
