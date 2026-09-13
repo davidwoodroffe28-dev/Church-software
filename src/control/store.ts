@@ -10,6 +10,7 @@ import type {
   ProgramState,
   Song,
   SongSection,
+  Template,
 } from '@shared/types';
 import type { OutputStatus } from '@shared/api';
 import { buildLiveSlide, getNextSlide, getSubSlideCount } from './slideBuilder';
@@ -54,6 +55,10 @@ interface AppState {
   // Media
   importMediaFiles: () => Promise<void>;
   deleteMedia: (id: string) => Promise<void>;
+
+  // Themes (Templates)
+  upsertTemplate: (template: Template) => Promise<void>;
+  deleteTemplate: (id: string) => Promise<void>;
 
   // Presentations
   importPresentation: () => Promise<{ error: string | null; warning?: string }>;
@@ -256,6 +261,25 @@ export const useStore = create<AppState>((set, get) => ({
     const media = library.media.filter((m) => m.id !== id);
     await window.api.library.saveMedia(media);
     set({ library: { ...library, media } });
+  },
+
+  upsertTemplate: async (template) => {
+    const library = get().library;
+    if (!library) return;
+    const idx = library.templates.findIndex((t) => t.id === template.id);
+    const templates = [...library.templates];
+    if (idx >= 0) templates[idx] = template;
+    else templates.push(template);
+    await window.api.library.saveTemplates(templates);
+    set({ library: { ...library, templates } });
+  },
+
+  deleteTemplate: async (id) => {
+    const library = get().library;
+    if (!library) return;
+    const templates = library.templates.filter((t) => t.id !== id);
+    await window.api.library.saveTemplates(templates);
+    set({ library: { ...library, templates } });
   },
 
   importPresentation: async () => {
@@ -495,4 +519,17 @@ export function newSong(title: string): Song {
 
 export function mediaItemLabel(m: MediaItem): string {
   return `${m.name} (${m.type})`;
+}
+
+export function newTemplate(name: string): Template {
+  return {
+    id: uuid(),
+    name,
+    background: { type: 'color', value: '#0c0e11' },
+    fontFamily: 'Georgia, serif',
+    fontSize: 56,
+    textColor: '#ffffff',
+    textAlign: 'center',
+    lowerThird: false,
+  };
 }

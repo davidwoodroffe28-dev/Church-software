@@ -1397,3 +1397,64 @@ label {
   letter-spacing: 0.06em;
   color: var(--ink3);
 }
+
+/* ---------- Themes screen ---------- */
+
+.themes-screen {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 280px 1fr 300px;
+  min-height: 0;
+  width: 100%;
+}
+.themes-list-column {
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-height: 0;
+}
+.themes-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.themes-preview-column {
+  border-right: 1px solid var(--line);
+  padding: var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-height: 0;
+}
+.themes-monitor {
+  max-width: 640px;
+}
+.themes-props-column {
+  padding: var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.align-toggle {
+  display: flex;
+  gap: 6px;
+}
+.align-btn {
+  flex: 1;
+  text-transform: capitalize;
+  font-size: 12.5px;
+}
+.align-btn-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--screen);
+  font-weight: 600;
+}
