@@ -1,0 +1,150 @@
+// Shared types used by both the main (Electron) process and the renderer UIs.
+// Type-only — safe to import from either side without pulling runtime code across the boundary.
+
+export type BackgroundType = 'color' | 'image' | 'video';
+
+export interface Background {
+  type: BackgroundType;
+  /** Hex color for type 'color', or an absolute file path / file:// URL for 'image'/'video'. */
+  value: string;
+}
+
+export interface Template {
+  id: string;
+  name: string;
+  background: Background;
+  fontFamily: string;
+  fontSize: number;
+  textColor: string;
+  textAlign: 'left' | 'center' | 'right';
+  /** Renders text pinned to the bottom third of the screen with a translucent bar, EasyWorship-style. */
+  lowerThird: boolean;
+}
+
+export interface SongSection {
+  id: string;
+  /** e.g. "Verse 1", "Chorus", "Bridge" */
+  label: string;
+  text: string;
+}
+
+export interface Song {
+  id: string;
+  title: string;
+  author?: string;
+  sections: SongSection[];
+  /** Order in which section ids should be presented; defaults to sections order if empty. */
+  sequence: string[];
+  templateId?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type MediaType = 'image' | 'video';
+
+export interface MediaItem {
+  id: string;
+  name: string;
+  type: MediaType;
+  filePath: string;
+  addedAt: number;
+}
+
+export interface BibleVerse {
+  book: string;
+  chapter: number;
+  verse: number;
+  text: string;
+}
+
+export interface BibleReference {
+  translation: string;
+  book: string;
+  chapter: number;
+  verseStart: number;
+  verseEnd?: number;
+}
+
+export interface Presentation {
+  id: string;
+  name: string;
+  /** Original .pptx/.ppt file the user imported */
+  sourceFilePath: string;
+  /** PDF produced by converting the source file (via LibreOffice headless), rendered client-side with pdf.js */
+  pdfPath: string;
+  slideCount: number;
+  addedAt: number;
+}
+
+export type PlaylistItemType = 'song' | 'verse' | 'media' | 'lowerThird' | 'presentation';
+
+export interface PlaylistItem {
+  id: string;
+  type: PlaylistItemType;
+  /** id of the Song / MediaItem this references, when applicable */
+  refId?: string;
+  /** For 'verse' items: the resolved reference + text snapshot */
+  bible?: BibleReference & { text: string };
+  /** For 'lowerThird' items: free-form text (e.g. announcement, name/title) */
+  customText?: string;
+  /** For 'presentation' items */
+  presentationId?: string;
+  slideIndex?: number;
+  templateId?: string;
+  label: string;
+}
+
+export interface Playlist {
+  id: string;
+  name: string;
+  items: PlaylistItem[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** What is currently being shown on a live output window. */
+export interface LiveSlide {
+  kind: 'blank' | 'song' | 'verse' | 'media' | 'lowerThird' | 'presentation';
+  text?: string;
+  label?: string;
+  background?: Background;
+  template?: Template;
+  /** For kind 'presentation': rendered client-side from this PDF page via pdf.js */
+  pdfPath?: string;
+  pageNumber?: number;
+  pageCount?: number;
+}
+
+/** Broadcast to every output window; each renders it differently based on its role. */
+export interface ProgramState {
+  current: LiveSlide;
+  /** "Up next" preview, shown on the stage display only. */
+  next?: LiveSlide;
+  /** Free-text operator note shown on the stage display (e.g. "5 min to sermon"). */
+  stageMessage?: string;
+  /** Show a running clock on the stage display. */
+  stageClock?: boolean;
+}
+
+export type OutputRole = 'program' | 'stage' | 'stream';
+
+export interface OutputConfig {
+  id: string;
+  role: OutputRole;
+  name: string;
+  /** Physical display id to place this output fullscreen on; null = leave as a regular window
+   *  (e.g. for OBS/vMix Window Capture of the stream/lower-thirds output). */
+  displayId: number | null;
+  /** Chroma-key background color used by the 'stream' role so it can be keyed out in OBS/vMix. */
+  chromaKey: string;
+  enabled: boolean;
+}
+
+export interface LibraryData {
+  songs: Song[];
+  media: MediaItem[];
+  playlists: Playlist[];
+  templates: Template[];
+  presentations: Presentation[];
+  outputConfigs: OutputConfig[];
+}
