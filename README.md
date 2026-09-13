@@ -83,8 +83,10 @@ Three panels, matching the standard broadcast Preview/Program split:
      https://www.libreoffice.org/) for exact fidelity.
 - **Song import** — bulk-import an existing song library:
   - OpenLyrics XML (the standard interchange format used by OpenLP, VideoPsalm, etc.)
-  - OpenSong-style / ChordPro / plain CCLI-pasted text (chords and section tags like `[Verse 1]`
-    are detected and stripped/parsed automatically)
+  - OpenSong libraries — genuine OpenSong per-song XML exports (one no-extension file per song,
+    auto-detected from its content) as well as OpenSong-style/ChordPro/plain CCLI-pasted text;
+    chord lines and section tags like `[Verse 1]` are detected and stripped/parsed automatically
+    either way
   - CSV with `title,author,lyrics` columns
   - **EasyWorship** — best-effort reader for an EasyWorship 7 (SQLite-based) song database. EasyWorship's
     database schema isn't officially documented, so this scans the database for a plausible songs table

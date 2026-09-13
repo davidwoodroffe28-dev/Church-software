@@ -54,15 +54,11 @@ function parseHeaderLabel(line: string): string | null {
 
 const METADATA_LINE_RE = /^(ccli|©|copyright|used by permission|all rights reserved|for use solely|www\.|http)/i;
 
-/** Parses OpenSong-style, ChordPro-style, or plain/CCLI-pasted lyric text into a Song. */
-export function parsePlainTextSong(content: string, title: string): Song {
-  const shell = newSongShell(title);
-  const rawLines = content.replace(/\r\n/g, '\n').split('\n');
-
-  const lines = rawLines
-    .filter((l) => !METADATA_LINE_RE.test(l.trim()))
-    .map((l) => l.replace(/\[[^\]]{1,20}\]/g, (token) => (parseHeaderLabel(token) ? token : ''))); // strip inline chords, keep header tokens
-
+/** Groups already-cleaned lyric lines into sections, splitting on [Verse]/[Chorus]-style header
+ *  lines when present, or on blank-line-separated blocks (labelled Verse 1, 2, 3…) otherwise.
+ *  Shared by the plain-text and OpenSong XML parsers, which differ only in how they get from their
+ *  raw source to this same flat line array. */
+function splitIntoSections(lines: string[]): SongSection[] {
   const hasAnyHeader = lines.some((l) => parseHeaderLabel(l) !== null);
 
   const sections: SongSection[] = [];
@@ -91,8 +87,50 @@ export function parsePlainTextSong(content: string, title: string): Song {
       .filter(Boolean);
     blocks.forEach((block, idx) => sections.push(makeSection(`Verse ${idx + 1}`, block)));
   }
+  return sections;
+}
 
-  return finalizeSong(shell, sections);
+/** Parses ChordPro-style or plain/CCLI-pasted lyric text (no XML wrapper) into a Song. */
+export function parsePlainTextSong(content: string, title: string): Song {
+  const shell = newSongShell(title);
+  const rawLines = content.replace(/\r\n/g, '\n').split('\n');
+
+  const lines = rawLines
+    .filter((l) => !METADATA_LINE_RE.test(l.trim()))
+    .map((l) => l.replace(/\[[^\]]{1,20}\]/g, (token) => (parseHeaderLabel(token) ? token : ''))); // strip inline chords, keep header tokens
+
+  return finalizeSong(shell, splitIntoSections(lines));
+}
+
+/** Parses a genuine OpenSong per-song XML file (the format OpenSong/OpenLP libraries actually
+ *  export — one file per song, XML-wrapped: <song><title/><author/><lyrics>[V1]\n.chord line\n
+ *  lyric line</lyrics></song>). Distinct from OpenLyrics XML (which wraps everything in a
+ *  <properties>/<lyrics><verse> structure) — both start with a <song> root, so callers should try
+ *  parseOpenLyricsXml first and fall back to this. Returns null if it doesn't look like OpenSong. */
+export function parseOpenSongXml(xml: string, fallbackTitle: string): Song | null {
+  try {
+    const parser = new XMLParser({ ignoreAttributes: true, textNodeName: '#text' });
+    const doc = parser.parse(xml);
+    const song = doc?.song;
+    if (!song || song.lyrics == null) return null; // no <lyrics> at the top level: not OpenSong's shape
+
+    const title = (typeof song.title === 'string' ? song.title : song.title?.['#text']) || fallbackTitle;
+    const shell = newSongShell(String(title).trim() || fallbackTitle);
+    const author = typeof song.author === 'string' ? song.author : song.author?.['#text'];
+    if (author) (shell as Song).author = String(author).trim();
+
+    const lyricsRaw: string = typeof song.lyrics === 'string' ? song.lyrics : String(song.lyrics?.['#text'] ?? '');
+    // OpenSong prefixes each chord/tab line with '.' (chords sit above the lyric line they apply
+    // to) — drop those before section-splitting so chord tokens never leak into the lyric text.
+    const lines = lyricsRaw
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .filter((l) => !/^\s*\./.test(l));
+
+    return finalizeSong(shell, splitIntoSections(lines));
+  } catch {
+    return null;
+  }
 }
 
 /** Parses an OpenLyrics XML song file (https://docs.openlyrics.org/). Returns null if it doesn't look like OpenLyrics. */
@@ -101,7 +139,12 @@ export function parseOpenLyricsXml(xml: string, fallbackTitle: string): Song | n
     const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '@_', textNodeName: '#text' });
     const doc = parser.parse(xml);
     const song = doc?.song;
-    if (!song) return null;
+    // OpenLyrics always wraps metadata in <properties> (https://docs.openlyrics.org/); genuine
+    // OpenSong XML has no such wrapper (flat <title>/<author>/<lyrics>) — without this check, any
+    // OpenSong file would silently "succeed" here with an empty song (song.lyrics is a plain
+    // string there, so song.lyrics?.verse below is always undefined) instead of falling through
+    // to parseOpenSongXml.
+    if (!song || !song.properties) return null;
 
     const titlesNode = song.properties?.titles?.title;
     const titleEntry = Array.isArray(titlesNode) ? titlesNode[0] : titlesNode;
@@ -230,15 +273,25 @@ export function importSongFile(filePath: string): SongImportResult {
       if (!songs.length) errors.push(`${filePath}: no valid rows found (expected columns: title, lyrics)`);
       return { songs, errors };
     }
-    if (ext === '.xml') {
-      const song = parseOpenLyricsXml(content, baseTitle);
-      if (!song) {
-        errors.push(`${filePath}: not a recognized OpenLyrics XML file`);
+
+    // Real OpenSong libraries export one file per song with NO extension, XML-wrapped — so treat
+    // ext === '.xml' OR (no extension but the content itself looks like XML) as "try XML parsers
+    // first". OpenLyrics and OpenSong both root on <song>, so try OpenLyrics's more distinctive
+    // <properties> shape first and fall back to OpenSong's flatter one.
+    if (ext === '.xml' || (ext === '' && /^\s*<(\?xml|song)/i.test(content))) {
+      const openLyrics = parseOpenLyricsXml(content, baseTitle);
+      if (openLyrics) return { songs: [openLyrics], errors };
+      const openSong = parseOpenSongXml(content, baseTitle);
+      if (openSong) return { songs: [openSong], errors };
+      if (ext === '.xml') {
+        errors.push(`${filePath}: not a recognized OpenLyrics or OpenSong XML file`);
         return { songs: [], errors };
       }
-      return { songs: [song], errors };
+      // No extension, looked like XML, but matched neither shape — fall through and treat it as
+      // plain text rather than erroring outright, in case it's just a coincidental '<' at the start.
     }
-    // .txt, .cho, .chordpro, .usr, or no extension (typical for OpenSong libraries)
+
+    // .txt, .cho, .chordpro, .usr, or a no-extension plain-text lyric sheet
     return { songs: [parsePlainTextSong(content, baseTitle)], errors };
   } catch (err) {
     errors.push(`${filePath}: ${err instanceof Error ? err.message : String(err)}`);

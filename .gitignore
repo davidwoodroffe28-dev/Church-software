@@ -4,3 +4,8 @@ dist-electron/
 release/
 *.log
 .DS_Store
+
+# Personal song libraries dropped in for local testing/import — likely under CCLI/copyright terms
+# that don't allow redistribution, unlike the public-domain Bible translations under resources/.
+*.7z
+Song database*
