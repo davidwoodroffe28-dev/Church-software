@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useStore } from './store';
-import type { ScreenTab } from './store';
 import { TitleBar } from './components/TitleBar';
 import { TabRow } from './components/TabRow';
 import { StatusBar } from './components/StatusBar';
@@ -11,11 +10,7 @@ import { SongsScreen } from './components/SongsScreen';
 import { BibleScreen } from './components/BibleScreen';
 import { MediaScreen } from './components/MediaScreen';
 import { ThemesScreen } from './components/ThemesScreen';
-import { ComingSoon } from './components/ComingSoon';
-
-const SCREEN_LABELS: Record<Exclude<ScreenTab, 'live' | 'stage' | 'home' | 'songs' | 'bible' | 'media' | 'themes'>, string> = {
-  settings: 'Settings',
-};
+import { SettingsScreen } from './components/SettingsScreen';
 
 export function App() {
   const loading = useStore((s) => s.loading);
@@ -51,7 +46,7 @@ export function App() {
         ) : tab === 'themes' ? (
           <ThemesScreen />
         ) : (
-          <ComingSoon screen={SCREEN_LABELS[tab]} />
+          <SettingsScreen />
         )}
       </div>
       <StatusBar />

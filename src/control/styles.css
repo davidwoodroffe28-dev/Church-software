@@ -281,18 +281,6 @@ label {
   color: var(--ink3);
 }
 
-/* ---------- coming soon ---------- */
-
-.coming-soon {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.coming-soon-inner {
-  max-width: 420px;
-  text-align: center;
-}
 .screen-title {
   font-size: 19px;
   font-weight: 600;
@@ -1457,4 +1445,82 @@ label {
   border-color: var(--accent);
   color: var(--screen);
   font-weight: 600;
+}
+
+/* ---------- Settings screen ---------- */
+
+.settings-screen {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 0;
+  width: 100%;
+}
+.settings-category-column {
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.settings-category {
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-control);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: 13.5px;
+  color: var(--ink2);
+}
+.settings-category:hover {
+  background: var(--hover);
+}
+.settings-category-active {
+  background: var(--panel2);
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.settings-content-column {
+  padding: var(--sp-7);
+  overflow-y: auto;
+  min-height: 0;
+}
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  max-width: 640px;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  padding: var(--sp-4) 0;
+  border-bottom: 1px solid var(--line);
+}
+.settings-row-main {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  flex: 1;
+  min-width: 0;
+}
+.settings-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.settings-row-label {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.settings-row-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
