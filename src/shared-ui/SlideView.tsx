@@ -81,13 +81,23 @@ function TextSlide({
 }) {
   const t = slide.template;
   const fontFamily = t?.fontFamily ?? 'sans-serif';
-  const fontSize = t?.fontSize ?? 56;
   const color = t?.textColor ?? '#ffffff';
   const textAlign = t?.textAlign ?? 'center';
 
+  // Template.fontSize is an absolute px value tuned for a real ~1920x1080 output window — fine for
+  // the actual Program/Stage/Stream outputs (which really are that size), but this same component
+  // also renders into small in-app monitors (Preview/Live panes, Songs/Themes previews, maybe
+  // 200-400px tall). Rendering that px value directly there made three words fill the whole frame.
+  // Convert to a container-query height unit against that same 1080 reference, matching the pattern
+  // NativeSlideView already uses for PPTX text — on the real full-size outputs 100cqh == 1080px, so
+  // this renders identically to before; on a small preview it scales down proportionally.
+  const REFERENCE_HEIGHT = 1080;
+  const fontSize = t?.fontSize ?? 56;
+  const fontSizeCqh = (fontSize / REFERENCE_HEIGHT) * 100;
+
   if (asLowerThird) {
     return (
-      <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <div style={{ width: '100%', height: '100%', position: 'relative', containerType: 'size' }}>
         {textVisible && (
           <div
             style={{
@@ -95,11 +105,11 @@ function TextSlide({
               left: 0,
               right: 0,
               bottom: '10%',
-              padding: '1.2em 2em',
+              padding: '1.5cqh 3cqw',
               background: 'rgba(0,0,0,0.55)',
               color,
               fontFamily,
-              fontSize: Math.min(fontSize, 48),
+              fontSize: `${Math.min(fontSizeCqh, (48 / REFERENCE_HEIGHT) * 100)}cqh`,
               textAlign,
               whiteSpace: 'pre-wrap',
             }}
@@ -112,7 +122,7 @@ function TextSlide({
   }
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', containerType: 'size' }}>
       {backgroundVisible ? (
         <BackgroundLayer background={slide.background} />
       ) : (
@@ -127,7 +137,7 @@ function TextSlide({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '4em',
+            padding: '4cqh',
             boxSizing: 'border-box',
           }}
         >
@@ -135,7 +145,7 @@ function TextSlide({
             style={{
               color,
               fontFamily,
-              fontSize,
+              fontSize: `${fontSizeCqh}cqh`,
               textAlign,
               whiteSpace: 'pre-wrap',
               lineHeight: 1.3,
