@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { v4 as uuid } from 'uuid';
 import type {
@@ -53,7 +54,8 @@ interface AppState {
   addPlaylistItem: (item: Omit<PlaylistItem, 'id'>) => Promise<void>;
   removePlaylistItem: (itemId: string) => Promise<void>;
   moveItem: (itemId: string, direction: -1 | 1) => Promise<void>;
-  reorderItem: (draggedId: string, targetId: string) => Promise<void>;
+  /** targetId null = drop past the last item (append at the end). */
+  reorderItem: (draggedId: string, targetId: string | null, position?: 'before' | 'after') => Promise<void>;
 
   // Selection / live
   select: (itemId: string, subIndex?: number) => void;
@@ -266,16 +268,28 @@ export const useStore = create<AppState>((set, get) => ({
     set({ library: { ...library, playlists } });
   },
 
-  reorderItem: async (draggedId, targetId) => {
+  reorderItem: async (draggedId, targetId, position = 'before') => {
     const library = get().library;
     const playlist = get().activePlaylist();
     if (!library || !playlist || draggedId === targetId) return;
     const items = [...playlist.items];
     const fromIdx = items.findIndex((i) => i.id === draggedId);
-    const toIdx = items.findIndex((i) => i.id === targetId);
-    if (fromIdx < 0 || toIdx < 0) return;
+    if (fromIdx < 0) return;
     const [moved] = items.splice(fromIdx, 1);
-    items.splice(toIdx, 0, moved);
+
+    let insertIdx: number;
+    if (targetId === null) {
+      insertIdx = items.length; // drop past the last item: append at the end
+    } else {
+      // Look up the target's index in the already-shrunk array (after removing the dragged item) —
+      // using its pre-removal index here would be off-by-one whenever the drag moves an item forward,
+      // since everything after it shifts left by one once removed.
+      const targetIdx = items.findIndex((i) => i.id === targetId);
+      if (targetIdx < 0) return;
+      insertIdx = position === 'after' ? targetIdx + 1 : targetIdx;
+    }
+    items.splice(insertIdx, 0, moved);
+
     const playlists = library.playlists.map((p) => (p.id === playlist.id ? { ...p, items, updatedAt: Date.now() } : p));
     await window.api.library.savePlaylists(playlists);
     set({ library: { ...library, playlists } });
@@ -352,6 +366,21 @@ export const useStore = create<AppState>((set, get) => ({
     window.api.displays.sync();
   },
 }));
+
+/**
+ * Reactively reads the active playlist. Prefer this over `useStore(s => s.activePlaylist)()` in
+ * components: that pattern selects the (stable, never-changing) function reference itself, so
+ * zustand never re-renders on playlist changes — it only appeared to work when some other
+ * subscribed piece of state happened to change at the same time (e.g. a tab switch).
+ */
+export function useActivePlaylist(): Playlist | null {
+  const library = useStore((s) => s.library);
+  const activePlaylistId = useStore((s) => s.activePlaylistId);
+  return useMemo(
+    () => library?.playlists.find((p) => p.id === activePlaylistId) ?? null,
+    [library, activePlaylistId]
+  );
+}
 
 export function newSongSection(label: string, text = ''): SongSection {
   return { id: uuid(), label, text };

@@ -24,6 +24,32 @@ npm start        # runs the built app
 
 `npm run typecheck` runs `tsc --noEmit` for both the renderer and the Electron main process.
 
+## Packaging an installer
+
+Built with `electron-builder`:
+
+```bash
+npm run dist:win     # -> release/*.exe (NSIS installer)
+npm run dist:mac     # -> release/*.dmg
+npm run dist:linux   # -> release/*.AppImage, *.deb
+```
+
+`npm run dist` builds for whichever platform you're running it on. The Windows NSIS installer
+defaults to a per-user install (no admin rights required) — the common case for a volunteer-operated
+church booth machine.
+
+**Primary target platform: Windows.** This was developed and its automated checks run in a Linux
+sandbox with no Windows machine available, so nothing here has been run on actual Windows — treat a
+first real run on a Windows machine as the real test, not the build succeeding. Two real
+cross-platform bugs were found and fixed by reasoning through the code rather than by testing on
+Windows directly: local file paths (imported media, PDF-converted PowerPoint slides) are now turned
+into `file://` URLs with Node's `pathToFileURL()` instead of raw string concatenation — the old code
+happened to produce valid URLs on Linux/Mac (POSIX paths already start with `/`) but would have
+produced broken URLs on Windows (backslash separators, missing the drive-letter slash, unescaped
+spaces in paths like `C:\Users\John Smith\My Documents\`). If you hit an issue specific to Windows,
+it's likely a similar path/URL assumption elsewhere — file an issue with the exact error and the file
+path involved.
+
 ## Layout
 
 Three panels, matching the standard broadcast Preview/Program split:
@@ -62,11 +88,15 @@ Three panels, matching the standard broadcast Preview/Program split:
   - CSV with `title,author,lyrics` columns
   - **EasyWorship** — best-effort reader for an EasyWorship 7 (SQLite-based) song database. EasyWorship's
     database schema isn't officially documented, so this scans the database for a plausible songs table
-    and a related lyrics/slides table rather than assuming exact column names — it works when the file is
-    genuinely SQLite, but titles-only is possible if no lyrics table is found. **EasyWorship 6 and
-    earlier** store songs in a SQL Server Compact `.sdf` file (a proprietary binary format) which this
-    cannot read at all; export to CCLI text or use OpenLP's EasyWorship importer to convert to OpenLyrics
-    XML first in that case.
+    rather than assuming exact column/table names, and handles both shapes such a schema plausibly takes:
+    lyrics stored directly on the song row (a "words"/"lyrics" column), or a separate per-slide table
+    referencing the song by id (using its order column, when present, to sequence slides correctly).
+    Verified against synthetic SQLite databases built to mimic each shape — not a real EasyWorship file,
+    since none was available to test against, so treat it as best-effort rather than a verified port.
+    Titles-only import is possible if neither shape is detected. **EasyWorship 6 and earlier** store
+    songs in a SQL Server Compact `.sdf` file (a proprietary binary format) which this cannot read at
+    all; export to CCLI text or use OpenLP's EasyWorship importer to convert to OpenLyrics XML first in
+    that case.
 - **Multiple simultaneous outputs**, each independently assigned to a physical display (or left
   windowed, e.g. for capture):
   - **Program** — the full audience/projector feed (background + text, or full-frame media/slides).
@@ -95,7 +125,12 @@ particular has its own attribution/usage terms) before distributing this app com
 
 - The no-LibreOffice PowerPoint fallback doesn't resolve slide-layout/master inheritance, grouped
   shapes, tables, charts, or effects/animations — install LibreOffice for exact fidelity.
-- The EasyWorship importer is schema-sniffing/best-effort, not a verified 1:1 port.
-- No packaging/installer setup yet (`electron-builder` etc.) — currently run via `npm start` or `npm run dev`.
+- The EasyWorship importer is schema-sniffing/best-effort (verified against synthetic databases, not a
+  real EasyWorship file), not a verified 1:1 port.
+- No app icon set yet (electron-builder falls back to a default Electron icon) — add one under
+  `build-assets/` and reference it in `package.json`'s `build` config before a real release.
+- The packaging config has been verified with a real Linux build (AppImage + deb) in this environment,
+  including confirming the bundled Bible data is readable from inside the packaged `app.asar`; the
+  Windows/Mac builds are unverified since no such machine was available here.
 - No live preview of an external video switcher's (e.g. ATEM) program feed inside the app yet — only
   the graphics/lower-thirds output is produced; camera mixing stays on the switcher.

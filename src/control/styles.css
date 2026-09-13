@@ -185,11 +185,23 @@ input, textarea, select {
 .schedule-list li.selected {
   outline: 2px solid #3b6fe0;
 }
-.schedule-list li.drag-over {
-  border-top: 2px solid #3b6fe0;
+.schedule-list li.drag-over-before {
+  box-shadow: inset 0 2px 0 #3b6fe0;
+}
+.schedule-list li.drag-over-after {
+  box-shadow: inset 0 -2px 0 #3b6fe0;
 }
 .schedule-list li.dragging {
   opacity: 0.4;
+}
+.schedule-list li.end-dropzone {
+  height: 14px;
+  border-radius: 4px;
+  background: none;
+}
+.schedule-list li.end-dropzone.active {
+  box-shadow: inset 0 2px 0 #3b6fe0;
+  background: #1e1e26;
 }
 .drag-handle {
   opacity: 0.5;

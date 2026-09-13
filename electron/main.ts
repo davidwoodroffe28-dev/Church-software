@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog, screen } from 'electron';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { Channels } from './ipcChannels';
 import { getLibrary, store } from './store';
 import { importPresentation } from './presentations';
@@ -174,7 +175,7 @@ ipcMain.handle(Channels.PickMediaFiles, async () => {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       name: path.basename(filePath),
       type: isVideo ? 'video' : 'image',
-      filePath: `file://${filePath}`,
+      filePath: pathToFileURL(filePath).href,
       addedAt: Date.now(),
     };
   });

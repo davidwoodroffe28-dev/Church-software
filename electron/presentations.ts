@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { app } from 'electron';
 import type { Presentation } from '@shared/types';
 import { parsePptxNative } from './pptxNative';
@@ -11,7 +12,11 @@ const execFileAsync = promisify(execFile);
 // LibreOffice's binary name differs by platform/install; try the common ones in order.
 const SOFFICE_CANDIDATES =
   process.platform === 'win32'
-    ? ['soffice.exe', 'C:\\Program Files\\LibreOffice\\program\\soffice.exe']
+    ? [
+        'soffice.exe',
+        'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
+        'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe',
+      ]
     : process.platform === 'darwin'
       ? ['soffice', '/Applications/LibreOffice.app/Contents/MacOS/soffice']
       : ['soffice', 'libreoffice'];
@@ -55,7 +60,7 @@ async function tryLibreOfficeConvert(sourceFilePath: string): Promise<Presentati
       return {
         ...newPresentationShell(sourceFilePath),
         mode: 'pdf',
-        pdfPath: `file://${pdfPath}`,
+        pdfPath: pathToFileURL(pdfPath).href,
         slideCount: 0, // corrected by the renderer after the first pdf.js load
       };
     } catch {

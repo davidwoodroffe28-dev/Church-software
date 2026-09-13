@@ -1,10 +1,10 @@
-import { useStore } from '../store';
+import { useStore, useActivePlaylist } from '../store';
 import { buildLiveSlide, getSubSlideCount } from '../slideBuilder';
 import { SlideView } from '../../shared-ui/SlideView';
 
 export function SlideGridPanel() {
   const library = useStore((s) => s.library);
-  const activePlaylist = useStore((s) => s.activePlaylist)();
+  const activePlaylist = useActivePlaylist();
   const selection = useStore((s) => s.selection);
   const select = useStore((s) => s.select);
   const liveItemId = useStore((s) => s.liveItemId);

@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { useStore } from '../store';
+import { useStore, useActivePlaylist } from '../store';
 import { buildLiveSlide } from '../slideBuilder';
 import { SlideView } from '../../shared-ui/SlideView';
 import { OutputsSettings } from './OutputsSettings';
 
 export function LiveOutputPanel() {
   const library = useStore((s) => s.library);
-  const activePlaylist = useStore((s) => s.activePlaylist)();
+  const activePlaylist = useActivePlaylist();
   const selection = useStore((s) => s.selection);
   const liveItemId = useStore((s) => s.liveItemId);
   const liveSubIndex = useStore((s) => s.liveSubIndex);

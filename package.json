@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "description": "Church media presentation software (lyrics, media backgrounds, Bible verses, lower thirds, playlists) for live worship display.",
   "private": true,
+  "author": {
+    "name": "Church Presenter",
+    "email": "noreply@example.com"
+  },
   "main": "dist-electron/electron/main.js",
   "type": "commonjs",
   "scripts": {
@@ -14,7 +18,37 @@
     "build:electron": "tsc -p electron/tsconfig.json",
     "build": "npm run build:renderer && npm run build:electron",
     "start": "cross-env NODE_ENV=production electron .",
-    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p electron/tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p electron/tsconfig.json",
+    "predist": "npm run build",
+    "dist": "electron-builder --publish=never",
+    "dist:linux": "npm run build && electron-builder --linux --publish=never",
+    "dist:mac": "npm run build && electron-builder --mac --publish=never",
+    "dist:win": "npm run build && electron-builder --win --publish=never"
+  },
+  "build": {
+    "appId": "com.churchpresenter.app",
+    "productName": "Church Presenter",
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "resources/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release",
+      "buildResources": "build-assets"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "AudioVideo"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.video"
+    },
+    "win": {
+      "target": ["nsis"]
+    }
   },
   "dependencies": {
     "electron-store": "^8.2.0",
@@ -36,6 +70,7 @@
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
     "electron": "^31.4.0",
+    "electron-builder": "^25.1.8",
     "typescript": "^5.5.4",
     "vite": "^5.4.2",
     "wait-on": "^7.2.0"

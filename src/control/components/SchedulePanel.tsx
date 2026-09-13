@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { PlaylistItem } from '@shared/types';
-import { useStore } from '../store';
+import { useStore, useActivePlaylist } from '../store';
 import { LibraryPanel } from './LibraryPanel';
 
 function itemIcon(type: PlaylistItem['type']): string {
@@ -19,7 +19,7 @@ function itemIcon(type: PlaylistItem['type']): string {
 }
 
 export function SchedulePanel() {
-  const activePlaylist = useStore((s) => s.activePlaylist)();
+  const activePlaylist = useActivePlaylist();
   const selection = useStore((s) => s.selection);
   const select = useStore((s) => s.select);
   const removePlaylistItem = useStore((s) => s.removePlaylistItem);
@@ -27,7 +27,7 @@ export function SchedulePanel() {
   const liveItemId = useStore((s) => s.liveItemId);
   const [mode, setMode] = useState<'schedule' | 'library'>('schedule');
   const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState<{ id: string; position: 'before' | 'after' } | null>(null);
 
   return (
     <div className="panel schedule-panel">
@@ -45,31 +45,55 @@ export function SchedulePanel() {
       ) : (
         <>
           <h3>{activePlaylist?.name ?? 'Order of Service'}</h3>
-          <ul className="schedule-list">
+          <ul
+            className="schedule-list"
+            onDragOver={(e) => {
+              // Bare container area (below the last item): dropping here appends to the end.
+              e.preventDefault();
+              setDragOver({ id: '__end__', position: 'after' });
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (draggedId) reorderItem(draggedId, null);
+              setDraggedId(null);
+              setDragOver(null);
+            }}
+          >
             {activePlaylist?.items.map((item) => {
               const isSelected = item.id === selection.itemId;
               const isLive = item.id === liveItemId;
+              const isDragOver = dragOver?.id === item.id && draggedId !== item.id;
               return (
                 <li
                   key={item.id}
                   className={
-                    (isSelected ? 'selected ' : '') + (dragOverId === item.id && draggedId !== item.id ? 'drag-over ' : '') + (draggedId === item.id ? 'dragging' : '')
+                    (isSelected ? 'selected ' : '') +
+                    (isDragOver ? `drag-over-${dragOver!.position} ` : '') +
+                    (draggedId === item.id ? 'dragging' : '')
                   }
                   draggable
                   onDragStart={() => setDraggedId(item.id)}
                   onDragEnd={() => {
                     setDraggedId(null);
-                    setDragOverId(null);
+                    setDragOver(null);
                   }}
                   onDragOver={(e) => {
                     e.preventDefault();
-                    if (dragOverId !== item.id) setDragOverId(item.id);
+                    e.stopPropagation();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const position = e.clientY - rect.top > rect.height / 2 ? 'after' : 'before';
+                    if (dragOver?.id !== item.id || dragOver.position !== position) {
+                      setDragOver({ id: item.id, position });
+                    }
                   }}
                   onDrop={(e) => {
                     e.preventDefault();
-                    if (draggedId && draggedId !== item.id) reorderItem(draggedId, item.id);
+                    e.stopPropagation();
+                    if (draggedId && draggedId !== item.id) {
+                      reorderItem(draggedId, item.id, dragOver?.position ?? 'before');
+                    }
                     setDraggedId(null);
-                    setDragOverId(null);
+                    setDragOver(null);
                   }}
                   onClick={() => select(item.id, 0)}
                 >
@@ -95,6 +119,9 @@ export function SchedulePanel() {
                 Nothing scheduled yet. Click <strong>+ Add Items</strong> above to bring in songs, media,
                 Bible verses, or slides.
               </li>
+            )}
+            {!!activePlaylist?.items.length && draggedId && (
+              <li className={'end-dropzone' + (dragOver?.id === '__end__' ? ' active' : '')} />
             )}
           </ul>
         </>
