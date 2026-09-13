@@ -4,15 +4,15 @@ import { TitleBar } from './components/TitleBar';
 import { TabRow, type ScreenTab } from './components/TabRow';
 import { StatusBar } from './components/StatusBar';
 import { LiveScreen } from './components/LiveScreen';
+import { StageScreen } from './components/StageScreen';
 import { ComingSoon } from './components/ComingSoon';
 
-const SCREEN_LABELS: Record<Exclude<ScreenTab, 'live'>, string> = {
+const SCREEN_LABELS: Record<Exclude<ScreenTab, 'live' | 'stage'>, string> = {
   home: 'Home',
   songs: 'Songs',
   bible: 'Bible',
   media: 'Media',
   themes: 'Themes',
-  stage: 'Stage',
   settings: 'Settings',
 };
 
@@ -34,7 +34,13 @@ export function App() {
       <TitleBar />
       <TabRow active={tab} onChange={setTab} />
       <div className="app-screen">
-        {tab === 'live' ? <LiveScreen /> : <ComingSoon screen={SCREEN_LABELS[tab]} />}
+        {tab === 'live' ? (
+          <LiveScreen />
+        ) : tab === 'stage' ? (
+          <StageScreen />
+        ) : (
+          <ComingSoon screen={SCREEN_LABELS[tab]} />
+        )}
       </div>
       <StatusBar />
     </div>

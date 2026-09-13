@@ -1,4 +1,4 @@
-import type { LibraryData, LiveSlide, PlaylistItem, Template } from '@shared/types';
+import type { LibraryData, LiveSlide, Playlist, PlaylistItem, Template } from '@shared/types';
 
 const FALLBACK_TEMPLATE: Template = {
   id: 'fallback',
@@ -108,4 +108,22 @@ export function buildLiveSlide(item: PlaylistItem, subIndex: number, library: Li
     default:
       return { kind: 'blank' };
   }
+}
+
+/** The "up next" slide after the given live position — the next sub-slide within the current item,
+ *  or the first sub-slide of the following service item once the current one runs out. Shared by the
+ *  program-state broadcast (sendProgramState) and the Stage screen's own "NEXT" preview. */
+export function getNextSlide(
+  playlist: Playlist | null,
+  liveItemId: string | null,
+  liveSubIndex: number,
+  library: LibraryData
+): LiveSlide | undefined {
+  const item = playlist?.items.find((i) => i.id === liveItemId) ?? null;
+  if (!item || !playlist) return undefined;
+  const subCount = getSubSlideCount(item, library);
+  if (liveSubIndex + 1 < subCount) return buildLiveSlide(item, liveSubIndex + 1, library);
+  const idx = playlist.items.findIndex((i) => i.id === item.id);
+  const nextItem = playlist.items[idx + 1];
+  return nextItem ? buildLiveSlide(nextItem, 0, library) : undefined;
 }

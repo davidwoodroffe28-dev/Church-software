@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { OutputConfig } from '@shared/types';
 import type { DisplayInfo } from '@shared/api';
 import { useStore } from '../store';
+import { Toggle } from './Toggle';
 
 interface Props {
   onClose: () => void;
@@ -48,7 +49,7 @@ export function OutputsSettings({ onClose }: Props) {
             {configs.map((c) => (
               <tr key={c.id}>
                 <td>
-                  <input type="checkbox" checked={c.enabled} onChange={(e) => update(c.id, { enabled: e.target.checked })} />
+                  <Toggle checked={c.enabled} onChange={(checked) => update(c.id, { enabled: checked })} />
                 </td>
                 <td>{c.name} <span className="role-badge">{c.role}</span></td>
                 <td>

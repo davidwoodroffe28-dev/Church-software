@@ -12,7 +12,7 @@ import type {
   SongSection,
 } from '@shared/types';
 import type { OutputStatus } from '@shared/api';
-import { buildLiveSlide, getSubSlideCount } from './slideBuilder';
+import { buildLiveSlide, getNextSlide, getSubSlideCount } from './slideBuilder';
 
 interface Selection {
   itemId: string | null;
@@ -93,18 +93,7 @@ function sendProgramState(get: () => AppState) {
   const playlist = state.activePlaylist();
   const item = playlist?.items.find((i) => i.id === state.liveItemId) ?? null;
   const current = item ? buildLiveSlide(item, state.liveSubIndex, library) : { kind: 'blank' as const };
-
-  let next: ReturnType<typeof buildLiveSlide> | undefined;
-  if (item && playlist) {
-    const subCount = getSubSlideCount(item, library);
-    if (state.liveSubIndex + 1 < subCount) {
-      next = buildLiveSlide(item, state.liveSubIndex + 1, library);
-    } else {
-      const idx = playlist.items.findIndex((i) => i.id === item.id);
-      const nextItem = playlist.items[idx + 1];
-      if (nextItem) next = buildLiveSlide(nextItem, 0, library);
-    }
-  }
+  const next = getNextSlide(playlist, state.liveItemId, state.liveSubIndex, library);
 
   const programState: ProgramState = {
     current,

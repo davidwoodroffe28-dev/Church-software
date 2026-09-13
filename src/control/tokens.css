@@ -1,6 +1,7 @@
 /* Design tokens from DESIGN-SPEC.md ("Sanctuary"). Never hard-code a colour outside this file. */
 
 :root {
+  color-scheme: dark;
   --bg: #16181c;
   --panel: #1c1f24;
   --panel2: #23272d;
@@ -44,6 +45,7 @@
 }
 
 [data-theme='light'] {
+  color-scheme: light;
   --bg: #eef0f2;
   --panel: #fbfbfc;
   --panel2: #f2f4f6;
