@@ -44,6 +44,7 @@ export function buildLiveSlide(item: PlaylistItem, subIndex: number, library: Li
       return {
         kind: 'song',
         text: section?.text ?? '',
+        secondaryText: section?.secondaryText,
         label: `${song.title} — ${section?.label ?? ''}`,
         background: template.background,
         template,

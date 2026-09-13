@@ -94,6 +94,7 @@ function TextSlide({
   const REFERENCE_HEIGHT = 1080;
   const fontSize = t?.fontSize ?? 56;
   const fontSizeCqh = (fontSize / REFERENCE_HEIGHT) * 100;
+  const showSecondary = !!t?.showSecondaryLanguage && !!slide.secondaryText;
 
   if (asLowerThird) {
     return (
@@ -143,17 +144,44 @@ function TextSlide({
         >
           <div
             style={{
-              color,
-              fontFamily,
-              fontSize: `${fontSizeCqh}cqh`,
-              textAlign,
-              whiteSpace: 'pre-wrap',
-              lineHeight: 1.3,
-              textShadow: '0 2px 12px rgba(0,0,0,0.6)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: textAlign === 'left' ? 'flex-start' : textAlign === 'right' ? 'flex-end' : 'center',
+              gap: '2cqh',
               maxWidth: '100%',
             }}
           >
-            {slide.text}
+            <div
+              style={{
+                color,
+                fontFamily,
+                fontSize: `${fontSizeCqh}cqh`,
+                textAlign,
+                whiteSpace: 'pre-wrap',
+                lineHeight: 1.3,
+                textShadow: '0 2px 12px rgba(0,0,0,0.6)',
+                maxWidth: '100%',
+              }}
+            >
+              {slide.text}
+            </div>
+            {showSecondary && (
+              <div
+                style={{
+                  color,
+                  opacity: 0.8,
+                  fontFamily,
+                  fontSize: `${fontSizeCqh * 0.72}cqh`,
+                  textAlign,
+                  whiteSpace: 'pre-wrap',
+                  lineHeight: 1.3,
+                  textShadow: '0 2px 12px rgba(0,0,0,0.6)',
+                  maxWidth: '100%',
+                }}
+              >
+                {slide.secondaryText}
+              </div>
+            )}
           </div>
         </div>
       )}

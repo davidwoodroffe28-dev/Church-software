@@ -7,6 +7,7 @@ import { Toggle } from './Toggle';
 const FONT_CHOICES = ['Georgia, serif', "'IBM Plex Sans', sans-serif", "'Source Serif 4', serif", 'Helvetica, Arial, sans-serif', 'Verdana, sans-serif'];
 
 const SAMPLE_TEXT = 'Amazing grace, how sweet the sound\nthat saved a wretch like me;';
+const SAMPLE_SECONDARY_TEXT = 'Sublime gracia, cuán dulce el sonido\nque a un desdichado salvó;';
 
 export function ThemesScreen() {
   const library = useStore((s) => s.library);
@@ -85,7 +86,10 @@ export function ThemesScreen() {
               <button className="primary" onClick={save} disabled={!dirty}>{dirty ? 'Save' : 'Saved'}</button>
             </div>
             <div className="slide-monitor themes-monitor">
-              <SlideView slide={{ kind: 'song', text: SAMPLE_TEXT, background: draft.background, template: draft }} mode="full" />
+              <SlideView
+                slide={{ kind: 'song', text: SAMPLE_TEXT, secondaryText: SAMPLE_SECONDARY_TEXT, background: draft.background, template: draft }}
+                mode="full"
+              />
             </div>
           </div>
 
@@ -124,6 +128,11 @@ export function ThemesScreen() {
 
             <div className="mono column-title">EFFECTS</div>
             <Toggle checked={draft.lowerThird} onChange={(v) => update({ lowerThird: v })} label="Lower-third style" />
+            <Toggle
+              checked={!!draft.showSecondaryLanguage}
+              onChange={(v) => update({ showSecondaryLanguage: v })}
+              label="Show second language"
+            />
 
             <div className="mono column-title">BACKGROUND</div>
             <div className="align-toggle">

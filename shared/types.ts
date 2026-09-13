@@ -19,6 +19,9 @@ export interface Template {
   textAlign: 'left' | 'center' | 'right';
   /** Renders text pinned to the bottom third of the screen with a translucent bar, EasyWorship-style. */
   lowerThird: boolean;
+  /** When true, a section's secondaryText (if any) renders stacked below the primary line — for
+   *  multicultural/multilingual congregations projecting two languages at once. */
+  showSecondaryLanguage?: boolean;
 }
 
 export interface SongSection {
@@ -26,6 +29,10 @@ export interface SongSection {
   /** e.g. "Verse 1", "Chorus", "Bridge" */
   label: string;
   text: string;
+  /** A second language's rendering of the same section (e.g. a Spanish translation), shown stacked
+   *  below `text` when the active Template has showSecondaryLanguage on. Optional — most songs and
+   *  most churches never set this. */
+  secondaryText?: string;
 }
 
 export interface Song {
@@ -136,6 +143,9 @@ export interface Playlist {
 export interface LiveSlide {
   kind: 'blank' | 'song' | 'verse' | 'media' | 'lowerThird' | 'presentation';
   text?: string;
+  /** A second language's rendering of `text`, shown stacked below it when the template's
+   *  showSecondaryLanguage is on — see SongSection.secondaryText. */
+  secondaryText?: string;
   label?: string;
   background?: Background;
   template?: Template;

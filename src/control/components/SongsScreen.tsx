@@ -39,7 +39,7 @@ export function SongsScreen() {
     setDirty(true);
   }
 
-  function updateSection(id: string, field: 'label' | 'text', value: string) {
+  function updateSection(id: string, field: 'label' | 'text' | 'secondaryText', value: string) {
     if (!draft) return;
     updateDraft({ sections: draft.sections.map((s) => (s.id === id ? { ...s, [field]: value } : s)) });
   }
@@ -180,6 +180,15 @@ export function SongsScreen() {
                   onChange={(e) => updateSection(focusedSection.id, 'text', e.target.value)}
                   placeholder="Lyrics for this section…"
                 />
+                <div className="mono column-title" style={{ marginTop: 'var(--sp-2)' }}>
+                  SECOND LANGUAGE (OPTIONAL)
+                </div>
+                <textarea
+                  className="section-text-field"
+                  value={focusedSection.secondaryText ?? ''}
+                  onChange={(e) => updateSection(focusedSection.id, 'secondaryText', e.target.value)}
+                  placeholder="Same section in a second language, shown stacked below when the theme has it turned on…"
+                />
               </div>
             )}
           </div>
@@ -212,7 +221,14 @@ function LiveSplit({ draft, focusedSection }: { draft: Song; focusedSection: Son
 
   const template = library.templates.find((t) => t.id === draft.templateId) ?? library.templates.find((t) => t.id === 'default-lyrics');
   const previewSlide = focusedSection
-    ? { kind: 'song' as const, text: focusedSection.text, label: `${draft.title} — ${focusedSection.label}`, background: template?.background, template }
+    ? {
+        kind: 'song' as const,
+        text: focusedSection.text,
+        secondaryText: focusedSection.secondaryText,
+        label: `${draft.title} — ${focusedSection.label}`,
+        background: template?.background,
+        template,
+      }
     : { kind: 'blank' as const };
 
   return (
