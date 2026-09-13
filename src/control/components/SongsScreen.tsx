@@ -1,13 +1,22 @@
 import { useEffect, useState } from 'react';
 import type { Song, SongSection } from '@shared/types';
-import { useStore, useActivePlaylist, newSong, newSongSection } from '../store';
+import { useStore, useActivePlaylist, newSong, newSongSection, sortSongsForQuickAccess } from '../store';
 import { buildLiveSlide } from '../slideBuilder';
 import { SlideView } from '../../shared-ui/SlideView';
+
+function StarIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill={filled ? 'var(--type-scripture)' : 'none'} stroke={filled ? 'var(--type-scripture)' : 'currentColor'} strokeWidth="2" strokeLinejoin="round">
+      <polygon points="12 2.5 15.1 9 22.2 10 17.1 15 18.3 22.1 12 18.8 5.7 22.1 6.9 15 1.8 10 8.9 9 12 2.5" />
+    </svg>
+  );
+}
 
 export function SongsScreen() {
   const library = useStore((s) => s.library);
   const upsertSong = useStore((s) => s.upsertSong);
   const deleteSong = useStore((s) => s.deleteSong);
+  const toggleSongFavorite = useStore((s) => s.toggleSongFavorite);
   const importSongsFiles = useStore((s) => s.importSongsFiles);
   const importSongsFolder = useStore((s) => s.importSongsFolder);
   const importEasyWorship = useStore((s) => s.importEasyWorship);
@@ -19,7 +28,9 @@ export function SongsScreen() {
   const [dirty, setDirty] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
 
-  const songs = (library?.songs ?? []).filter((s) => s.title.toLowerCase().includes(query.toLowerCase()));
+  const songs = sortSongsForQuickAccess(
+    (library?.songs ?? []).filter((s) => s.title.toLowerCase().includes(query.toLowerCase()))
+  );
 
   function loadSong(song: Song) {
     setSelectedId(song.id);
@@ -118,6 +129,13 @@ export function SongsScreen() {
                 <div className="library-row-title">{song.title}</div>
                 <div className="mono library-row-meta">{song.sections.length} SECTION{song.sections.length === 1 ? '' : 'S'}</div>
               </div>
+              <button
+                className="row-icon-btn"
+                onClick={(e) => { e.stopPropagation(); toggleSongFavorite(song.id); }}
+                title={song.favorite ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <StarIcon filled={!!song.favorite} />
+              </button>
               <button className="row-icon-btn" onClick={(e) => { e.stopPropagation(); deleteSong(song.id); if (song.id === selectedId) setSelectedId(null); }} title="Delete">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
               </button>

@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
 import type { BibleVerse, Song } from '@shared/types';
-import { useStore, newSong, mediaItemLabel } from '../store';
+import { useStore, newSong, mediaItemLabel, sortSongsForQuickAccess } from '../store';
 import { SongEditor } from './SongEditor';
+
+function StarIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill={filled ? 'var(--type-scripture)' : 'none'} stroke={filled ? 'var(--type-scripture)' : 'currentColor'} strokeWidth="2" strokeLinejoin="round">
+      <polygon points="12 2.5 15.1 9 22.2 10 17.1 15 18.3 22.1 12 18.8 5.7 22.1 6.9 15 1.8 10 8.9 9 12 2.5" />
+    </svg>
+  );
+}
 
 type Filter = 'songs' | 'scripture' | 'media' | 'slides';
 
@@ -95,7 +103,8 @@ function SongsFilter({ query }: { query: string }) {
   const library = useStore((s) => s.library);
   const upsertSong = useStore((s) => s.upsertSong);
   const deleteSong = useStore((s) => s.deleteSong);
-  const addPlaylistItem = useStore((s) => s.addPlaylistItem);
+  const toggleSongFavorite = useStore((s) => s.toggleSongFavorite);
+  const addSongToService = useStore((s) => s.addSongToService);
   const importSongsFiles = useStore((s) => s.importSongsFiles);
   const importSongsFolder = useStore((s) => s.importSongsFolder);
   const importEasyWorship = useStore((s) => s.importEasyWorship);
@@ -109,7 +118,9 @@ function SongsFilter({ query }: { query: string }) {
     setImportStatus(parts.join(' '));
   }
 
-  const songs = (library?.songs ?? []).filter((s) => s.title.toLowerCase().includes(query.toLowerCase()));
+  const songs = sortSongsForQuickAccess(
+    (library?.songs ?? []).filter((s) => s.title.toLowerCase().includes(query.toLowerCase()))
+  );
 
   return (
     <div className="library-tab-body">
@@ -133,11 +144,20 @@ function SongsFilter({ query }: { query: string }) {
           title={song.title}
           meta={`SONG · ${song.sections.length} SECTION${song.sections.length === 1 ? '' : 'S'}`}
           onClick={() => setEditing(song)}
-          onAdd={() => addPlaylistItem({ type: 'song', refId: song.id, label: song.title })}
+          onAdd={() => addSongToService(song)}
           extra={
-            <button className="row-icon-btn" onClick={(e) => { e.stopPropagation(); deleteSong(song.id); }} title="Delete">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
-            </button>
+            <>
+              <button
+                className="row-icon-btn"
+                onClick={(e) => { e.stopPropagation(); toggleSongFavorite(song.id); }}
+                title={song.favorite ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <StarIcon filled={!!song.favorite} />
+              </button>
+              <button className="row-icon-btn" onClick={(e) => { e.stopPropagation(); deleteSong(song.id); }} title="Delete">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
+              </button>
+            </>
           }
         />
       ))}

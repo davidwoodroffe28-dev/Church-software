@@ -45,6 +45,11 @@ export interface Song {
   templateId?: string;
   createdAt: number;
   updatedAt: number;
+  /** Starred for quick access in the Library — independent of how recently it was used. */
+  favorite?: boolean;
+  /** Set whenever the song is added to a service, for "recently used" sorting in the Library —
+   *  distinct from updatedAt, which tracks edits to the song's own content. */
+  lastUsedAt?: number;
 }
 
 export type MediaType = 'image' | 'video';

@@ -50,6 +50,10 @@ interface AppState {
   // Songs
   upsertSong: (song: Song) => Promise<void>;
   deleteSong: (id: string) => Promise<void>;
+  toggleSongFavorite: (id: string) => Promise<void>;
+  /** Adds a song to the active service AND stamps lastUsedAt on it, so the Library's "recently
+   *  used" ordering reflects songs actually pulled into a service, not just edited. */
+  addSongToService: (song: Song) => Promise<void>;
   importSongsFiles: () => Promise<{ imported: number; errors: string[] }>;
   importSongsFolder: () => Promise<{ imported: number; errors: string[] }>;
   importEasyWorship: () => Promise<{ imported: number; errors: string[]; warning?: string }>;
@@ -231,6 +235,23 @@ export const useStore = create<AppState>((set, get) => ({
     const library = get().library;
     if (!library) return;
     const songs = library.songs.filter((s) => s.id !== id);
+    await window.api.library.saveSongs(songs);
+    set({ library: { ...library, songs } });
+  },
+
+  toggleSongFavorite: async (id) => {
+    const library = get().library;
+    if (!library) return;
+    const songs = library.songs.map((s) => (s.id === id ? { ...s, favorite: !s.favorite } : s));
+    await window.api.library.saveSongs(songs);
+    set({ library: { ...library, songs } });
+  },
+
+  addSongToService: async (song) => {
+    await get().addPlaylistItem({ type: 'song', refId: song.id, label: song.title });
+    const library = get().library;
+    if (!library) return;
+    const songs = library.songs.map((s) => (s.id === song.id ? { ...s, lastUsedAt: Date.now() } : s));
     await window.api.library.saveSongs(songs);
     set({ library: { ...library, songs } });
   },
@@ -551,6 +572,18 @@ export function newSong(title: string): Song {
 
 export function mediaItemLabel(m: MediaItem): string {
   return `${m.name} (${m.type})`;
+}
+
+/** Favorites first, then most-recently-used-in-a-service, then alphabetical — the ordering used
+ *  everywhere the song library is browsed, so a volunteer's most-reached-for songs are always near
+ *  the top instead of buried in an alphabetical list of hundreds. */
+export function sortSongsForQuickAccess(songs: Song[]): Song[] {
+  return [...songs].sort((a, b) => {
+    if (!!b.favorite !== !!a.favorite) return b.favorite ? 1 : -1;
+    const usedDelta = (b.lastUsedAt ?? 0) - (a.lastUsedAt ?? 0);
+    if (usedDelta !== 0) return usedDelta;
+    return a.title.localeCompare(b.title);
+  });
 }
 
 export function newTemplate(name: string): Template {
