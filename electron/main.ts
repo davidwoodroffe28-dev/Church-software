@@ -37,8 +37,13 @@ function loadRendererPage(win: BrowserWindow, page: 'index' | 'output', query = 
 
 function createControlWindow() {
   controlWindow = new BrowserWindow({
-    width: 1360,
-    height: 860,
+    width: 1480,
+    height: 900,
+    // The renderer's layout floor is 1420x780 (DESIGN-SPEC.md — panels never compress below it);
+    // the previous default (1360x860) was narrower than that, so the window opened already
+    // horizontally clipped/scrolled on a fresh install.
+    minWidth: 1420,
+    minHeight: 800,
     title: 'Sanctuary',
     icon: appIconPath,
     webPreferences: {

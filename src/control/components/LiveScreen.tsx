@@ -66,6 +66,11 @@ export function LiveScreen() {
           item={previewItem}
           activeSubIndex={selection.subIndex}
           onSelectSub={(idx) => previewItem && select(previewItem.id, idx)}
+          onSelectSubDouble={(idx) => {
+            if (!previewItem) return;
+            select(previewItem.id, idx);
+            goLive();
+          }}
           onStep={stepSubSlide}
           actions={
             <button className="send-to-live" onClick={goLive} disabled={!previewItem}>

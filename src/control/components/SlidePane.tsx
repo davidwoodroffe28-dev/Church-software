@@ -9,6 +9,9 @@ interface Props {
   item: PlaylistItem | null;
   activeSubIndex: number;
   onSelectSub: (idx: number) => void;
+  /** Double-click a row to jump straight there without the separate "Send to Live" step — only
+   *  meaningful on the Preview pane (Live's rows are already on air). */
+  onSelectSubDouble?: (idx: number) => void;
   onStep: (direction: -1 | 1) => void;
   actions: ReactNode;
   headerExtra?: ReactNode;
@@ -24,6 +27,7 @@ export function SlidePane({
   item,
   activeSubIndex,
   onSelectSub,
+  onSelectSubDouble,
   onStep,
   actions,
   headerExtra,
@@ -62,6 +66,8 @@ export function SlidePane({
               key={idx}
               className={'slide-row' + (isActive ? ` slide-row-active-${kind}` : '')}
               onClick={() => onSelectSub(idx)}
+              onDoubleClick={onSelectSubDouble ? () => onSelectSubDouble(idx) : undefined}
+              title={onSelectSubDouble ? 'Click to stage · double-click to go live immediately' : undefined}
             >
               <span className="mono slide-row-tag">
                 {isActive && kind === 'live' && <span className="live-blip" />}

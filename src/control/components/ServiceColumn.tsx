@@ -9,6 +9,7 @@ export function ServiceColumn() {
   const removePlaylistItem = useStore((s) => s.removePlaylistItem);
   const reorderItem = useStore((s) => s.reorderItem);
   const liveItemId = useStore((s) => s.liveItemId);
+  const goLive = useStore((s) => s.goLive);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<{ id: string; position: 'before' | 'after' } | null>(null);
 
@@ -76,6 +77,11 @@ export function ServiceColumn() {
                 setDragOver(null);
               }}
               onClick={() => select(item.id, 0)}
+              onDoubleClick={() => {
+                select(item.id, 0);
+                goLive();
+              }}
+              title="Click to stage in Preview · double-click to go live immediately"
             >
               <span className="type-stripe" style={{ background: meta.color }} />
               <div className="service-row-body">
