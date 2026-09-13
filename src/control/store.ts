@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { v4 as uuid } from 'uuid';
 import type {
   LibraryData,
+  LiveSlide,
   MediaItem,
   OutputConfig,
   Playlist,
@@ -43,6 +44,7 @@ interface AppState {
   scheduleUndoStack: PlaylistItem[][];
   scheduleRedoStack: PlaylistItem[][];
   preServiceLoop: { active: boolean; intervalSec: number };
+  countdown: { durationSec: number; remainingSec: number; running: boolean; endAt: number | null; showOnProgram: boolean };
 
   load: () => Promise<void>;
   toggleTheme: () => void;
@@ -118,16 +120,36 @@ interface AppState {
   // Mobile remote control
   startRemote: () => Promise<void>;
   stopRemote: () => Promise<void>;
+
+  // Pre-service countdown (audience-facing, on Program/Stage)
+  setCountdownDuration: (sec: number) => void;
+  startCountdown: () => void;
+  pauseCountdown: () => void;
+  resetCountdown: () => void;
+  setCountdownOnProgram: (show: boolean) => void;
 }
 
 function sendProgramState(get: () => AppState) {
   const state = get();
   const library = state.library;
   if (!library) return;
-  const playlist = state.activePlaylist();
-  const item = playlist?.items.find((i) => i.id === state.liveItemId) ?? null;
-  const current = item ? buildLiveSlide(item, state.liveSubIndex, library) : { kind: 'blank' as const };
-  const next = getNextSlide(playlist, state.liveItemId, state.liveSubIndex, library);
+
+  let current: LiveSlide;
+  let next: LiveSlide | undefined;
+
+  // The countdown is a deliberate override — while it's on, it IS the program output, same as the
+  // pre-service loop taking over liveItemId. Broadcast the end time once (not a value every second)
+  // so every output window ticks itself locally and stays in perfect sync — see CountdownSlide.
+  if (state.countdown.showOnProgram) {
+    current = state.countdown.running
+      ? { kind: 'countdown', countdownEndAt: state.countdown.endAt ?? undefined }
+      : { kind: 'countdown', countdownRemainingSec: state.countdown.remainingSec };
+  } else {
+    const playlist = state.activePlaylist();
+    const item = playlist?.items.find((i) => i.id === state.liveItemId) ?? null;
+    current = item ? buildLiveSlide(item, state.liveSubIndex, library) : { kind: 'blank' as const };
+    next = getNextSlide(playlist, state.liveItemId, state.liveSubIndex, library);
+  }
 
   const programState: ProgramState = {
     current,
@@ -177,6 +199,13 @@ function stopPreServiceLoopTimer(get: () => AppState, set: (partial: Partial<App
   if (get().preServiceLoop.active) set({ preServiceLoop: { ...get().preServiceLoop, active: false } });
 }
 
+/** Any manual live action (Send to Live, keyboard advance, Clear, Take off air) means the operator
+ *  is taking over Program — drop the countdown overlay so it doesn't keep overriding what they just
+ *  asked to show. The countdown itself keeps running in the background; only the broadcast stops. */
+function dismissCountdownOverlay(get: () => AppState, set: (partial: Partial<AppState>) => void) {
+  if (get().countdown.showOnProgram) set({ countdown: { ...get().countdown, showOnProgram: false } });
+}
+
 const SCHEDULE_UNDO_LIMIT = 50;
 
 /** Captures the active playlist's current items onto the undo stack and clears redo — called at
@@ -208,6 +237,7 @@ export const useStore = create<AppState>((set, get) => ({
   scheduleUndoStack: [],
   scheduleRedoStack: [],
   preServiceLoop: { active: false, intervalSec: 8 },
+  countdown: { durationSec: 300, remainingSec: 300, running: false, endAt: null, showOnProgram: false },
 
   setActiveScreen: (screen) => set({ activeScreen: screen }),
 
@@ -549,6 +579,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   stepLive: (direction) => {
     stopPreServiceLoopTimer(get, set);
+    dismissCountdownOverlay(get, set);
     const { liveItemId, liveSubIndex, library } = get();
     const playlist = get().activePlaylist();
     if (!liveItemId || !library || !playlist) return;
@@ -580,12 +611,14 @@ export const useStore = create<AppState>((set, get) => ({
   setLiveSubIndex: (subIndex) => {
     if (!get().liveItemId) return;
     stopPreServiceLoopTimer(get, set);
+    dismissCountdownOverlay(get, set);
     set({ liveSubIndex: subIndex, liveTextVisible: true, liveBackgroundVisible: true });
     sendProgramState(get);
   },
 
   goLive: async () => {
     stopPreServiceLoopTimer(get, set);
+    dismissCountdownOverlay(get, set);
     const { selection } = get();
     if (!selection.itemId) return;
     set({
@@ -599,6 +632,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   clearLive: async () => {
     stopPreServiceLoopTimer(get, set);
+    dismissCountdownOverlay(get, set);
     set({ liveItemId: null, liveSubIndex: 0, liveTextVisible: true, liveBackgroundVisible: true });
     await window.api.live.clear();
   },
@@ -661,6 +695,42 @@ export const useStore = create<AppState>((set, get) => ({
     set({ remoteBusy: true });
     await window.api.remote.stop();
     set({ remoteStatus: { running: false, url: null, qrDataUrl: null }, remoteBusy: false });
+  },
+
+  setCountdownDuration: (sec) => {
+    const c = get().countdown;
+    if (c.running) return;
+    set({ countdown: { ...c, durationSec: sec, remainingSec: sec } });
+    if (c.showOnProgram) sendProgramState(get);
+  },
+
+  startCountdown: () => {
+    const c = get().countdown;
+    if (c.remainingSec <= 0) return;
+    const next = { ...c, running: true, endAt: Date.now() + c.remainingSec * 1000 };
+    set({ countdown: next });
+    if (next.showOnProgram) sendProgramState(get);
+  },
+
+  pauseCountdown: () => {
+    const c = get().countdown;
+    if (!c.running) return;
+    const remainingSec = Math.max(0, Math.round(((c.endAt ?? Date.now()) - Date.now()) / 1000));
+    const next = { ...c, running: false, endAt: null, remainingSec };
+    set({ countdown: next });
+    if (next.showOnProgram) sendProgramState(get);
+  },
+
+  resetCountdown: () => {
+    const c = get().countdown;
+    const next = { ...c, running: false, endAt: null, remainingSec: c.durationSec };
+    set({ countdown: next });
+    if (next.showOnProgram) sendProgramState(get);
+  },
+
+  setCountdownOnProgram: (show) => {
+    set({ countdown: { ...get().countdown, showOnProgram: show } });
+    sendProgramState(get);
   },
 }));
 

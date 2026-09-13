@@ -1,6 +1,38 @@
+import { useEffect, useState } from 'react';
 import type { LiveSlide } from '@shared/types';
 import { PdfPageCanvas } from './PdfPageCanvas';
 import { NativeSlideView } from './NativeSlideView';
+
+function formatCountdown(totalSec: number): string {
+  const clamped = Math.max(0, totalSec);
+  const m = Math.floor(clamped / 60);
+  const s = clamped % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+/** Ticks locally from the broadcast end time so every output window stays in sync without needing
+ *  a new IPC message every second — see LiveSlide.countdownEndAt. */
+function CountdownSlide({ slide }: { slide: LiveSlide }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!slide.countdownEndAt) return;
+    const id = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(id);
+  }, [slide.countdownEndAt]);
+
+  const totalSec = slide.countdownEndAt
+    ? Math.ceil(Math.max(0, slide.countdownEndAt - now) / 1000)
+    : (slide.countdownRemainingSec ?? 0);
+
+  return (
+    <div style={{ width: '100%', height: '100%', background: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center', containerType: 'size' }}>
+      <div style={{ color: '#ffffff', fontFamily: 'system-ui, sans-serif', fontWeight: 600, fontSize: '28cqh', fontVariantNumeric: 'tabular-nums' }}>
+        {formatCountdown(totalSec)}
+      </div>
+    </div>
+  );
+}
 
 export type RenderMode = 'full' | 'stage' | 'stream';
 
@@ -213,6 +245,10 @@ export function SlideView({
 
   if (slide.kind === 'blank') {
     return <div style={{ width: '100%', height: '100%', background: '#000000' }} />;
+  }
+
+  if (slide.kind === 'countdown') {
+    return <CountdownSlide slide={slide} />;
   }
 
   if (isFullFrameKind) {

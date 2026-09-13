@@ -147,7 +147,10 @@ monitor      16:9 output with song credits in the corner
 - **Slides** — imported PowerPoint library: 16:9 thumbnail grid (real rendered first slides, not
   icons), selected-item panel with page-by-page navigation through that presentation.
 - **Themes** — theme list · large 16:9 preview · font, size, alignment, effects.
-- **Stage** — single large stage-display mock: clock, timer, current lyric, NEXT.
+- **Stage** — single large stage-display mock: clock, timer, current lyric, NEXT. The timer's
+  "Show on Program" toggle broadcasts it as the real on-air content (same mechanism as the
+  pre-service loop taking over Program) — an audience-facing pre-service countdown, not just an
+  operator-side clock. Any manual live action drops the broadcast automatically.
 - **Settings** — category list · labelled toggle rows with one line of plain-English help.
 
 ---

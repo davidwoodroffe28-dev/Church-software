@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useStore } from '../store';
+import { Toggle } from './Toggle';
 
 function format(totalSeconds: number): string {
   const clamped = Math.max(0, totalSeconds);
@@ -7,33 +9,31 @@ function format(totalSeconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-/** A simple countdown timer for the Stage screen — session-only, not persisted. */
+/** Pre-service countdown — session-only, not persisted. Lives in the store (not local state) so
+ *  "Show on Program" can broadcast it to the real outputs and it keeps running across tab changes. */
 export function Timer() {
-  const [minutes, setMinutes] = useState(5);
-  const [remaining, setRemaining] = useState(5 * 60);
-  const [running, setRunning] = useState(false);
-  const intervalRef = useRef<number | null>(null);
+  const countdown = useStore((s) => s.countdown);
+  const setDuration = useStore((s) => s.setCountdownDuration);
+  const start = useStore((s) => s.startCountdown);
+  const pause = useStore((s) => s.pauseCountdown);
+  const reset = useStore((s) => s.resetCountdown);
+  const setOnProgram = useStore((s) => s.setCountdownOnProgram);
+
+  const [minutesInput, setMinutesInput] = useState(String(Math.round(countdown.durationSec / 60)));
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    if (!running) return;
-    intervalRef.current = window.setInterval(() => {
-      setRemaining((r) => {
-        if (r <= 0) {
-          setRunning(false);
-          return 0;
-        }
-        return r - 1;
-      });
-    }, 1000);
-    return () => {
-      if (intervalRef.current) window.clearInterval(intervalRef.current);
-    };
-  }, [running]);
+    if (!countdown.running) return;
+    const id = window.setInterval(() => setNow(Date.now()), 250);
+    return () => window.clearInterval(id);
+  }, [countdown.running]);
 
-  function reset(mins: number) {
-    setRunning(false);
-    setMinutes(mins);
-    setRemaining(mins * 60);
+  const remaining =
+    countdown.running && countdown.endAt ? Math.ceil(Math.max(0, countdown.endAt - now) / 1000) : countdown.remainingSec;
+
+  function applyMinutes(value: string) {
+    setMinutesInput(value);
+    setDuration(Math.max(1, Number(value) || 1) * 60);
   }
 
   return (
@@ -45,16 +45,24 @@ export function Timer() {
           className="timer-minutes"
           min={1}
           max={99}
-          value={minutes}
-          onChange={(e) => reset(Math.max(1, Number(e.target.value) || 1))}
-          disabled={running}
+          value={minutesInput}
+          onChange={(e) => applyMinutes(e.target.value)}
+          disabled={countdown.running}
           title="Minutes"
         />
-        <button onClick={() => setRunning((r) => !r)} disabled={remaining === 0}>
-          {running ? 'Pause' : 'Start'}
+        <button onClick={countdown.running ? pause : start} disabled={!countdown.running && remaining === 0}>
+          {countdown.running ? 'Pause' : 'Start'}
         </button>
-        <button onClick={() => reset(minutes)}>Reset</button>
+        <button
+          onClick={() => {
+            reset();
+            setMinutesInput(String(Math.round(countdown.durationSec / 60)));
+          }}
+        >
+          Reset
+        </button>
       </div>
+      <Toggle checked={countdown.showOnProgram} onChange={setOnProgram} label="Show on Program" />
     </div>
   );
 }

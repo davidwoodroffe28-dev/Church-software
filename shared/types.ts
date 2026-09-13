@@ -149,7 +149,7 @@ export interface Playlist {
 
 /** What is currently being shown on a live output window. */
 export interface LiveSlide {
-  kind: 'blank' | 'song' | 'verse' | 'media' | 'lowerThird' | 'presentation';
+  kind: 'blank' | 'song' | 'verse' | 'media' | 'lowerThird' | 'presentation' | 'countdown';
   text?: string;
   /** A second language's rendering of `text`, shown stacked below it when the template's
    *  showSecondaryLanguage is on — see SongSection.secondaryText. */
@@ -164,6 +164,13 @@ export interface LiveSlide {
   /** For kind 'presentation' (mode 'native'): pre-parsed slide content, rendered as absolutely
    *  positioned HTML/CSS instead of a PDF page. */
   nativeSlide?: NativeSlide;
+  /** For kind 'countdown', while running: an absolute timestamp (Date.now()-compatible ms) the
+   *  output window ticks down to locally — broadcasting the end time once, rather than a new value
+   *  every second, keeps this cheap and perfectly in sync across every output window. */
+  countdownEndAt?: number;
+  /** For kind 'countdown' while paused: the frozen remaining time to display statically. Exactly
+   *  one of countdownEndAt/countdownRemainingSec is set at a time. */
+  countdownRemainingSec?: number;
 }
 
 /** Broadcast to every output window; each renders it differently based on its role. */
