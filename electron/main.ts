@@ -11,6 +11,16 @@ import type { MediaItem, OutputConfig, ProgramState } from '@shared/types';
 
 const isDev = process.env.NODE_ENV === 'development';
 
+// build-assets ships alongside dist-electron in both dev (repo root) and packaged (files entry in
+// package.json's build config) layouts, so the same relative path resolves in both.
+const appIconPath = path.join(
+  __dirname,
+  '..',
+  '..',
+  'build-assets',
+  process.platform === 'win32' ? 'icon.ico' : 'icon.png'
+);
+
 let controlWindow: BrowserWindow | null = null;
 const outputWindows = new Map<string, BrowserWindow>();
 let lastProgramState: ProgramState = { current: { kind: 'blank' } };
@@ -30,6 +40,7 @@ function createControlWindow() {
     width: 1360,
     height: 860,
     title: 'Sanctuary',
+    icon: appIconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -70,6 +81,7 @@ function createOutputWindow(config: OutputConfig) {
     backgroundColor: config.role === 'stream' ? undefined : '#000000',
     transparent: config.role === 'stream',
     title: `Sanctuary — ${config.name}`,
+    icon: appIconPath,
     webPreferences: {
       preload: path.join(__dirname, 'outputPreload.js'),
       contextIsolation: true,

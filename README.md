@@ -127,8 +127,8 @@ particular has its own attribution/usage terms) before distributing this app com
   shapes, tables, charts, or effects/animations — install LibreOffice for exact fidelity.
 - The EasyWorship importer is schema-sniffing/best-effort (verified against synthetic databases, not a
   real EasyWorship file), not a verified 1:1 port.
-- No app icon set yet (electron-builder falls back to a default Electron icon) — add one under
-  `build-assets/` and reference it in `package.json`'s `build` config before a real release.
+- App icon: `build-assets/icon.ico` (Windows) and `build-assets/icon.png` (Linux) are in place —
+  no `icon.icns` yet, so a Mac build still falls back to the default Electron icon.
 - The packaging config has been verified with a real Linux build (AppImage + deb) in this environment,
   including confirming the bundled Bible data is readable from inside the packaged `app.asar`; the
   Windows/Mac builds are unverified since no such machine was available here.

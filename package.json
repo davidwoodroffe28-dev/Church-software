@@ -32,6 +32,8 @@
       "dist/**/*",
       "dist-electron/**/*",
       "resources/**/*",
+      "build-assets/icon.ico",
+      "build-assets/icon.png",
       "package.json"
     ],
     "directories": {
