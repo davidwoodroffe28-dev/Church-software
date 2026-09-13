@@ -1296,3 +1296,104 @@ label {
 .verse-row-actions button {
   font-size: 12px;
 }
+
+/* ---------- Media screen ---------- */
+
+.media-screen {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  min-height: 0;
+  width: 100%;
+}
+.media-main-column {
+  padding: var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-height: 0;
+  overflow-y: auto;
+}
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--sp-4);
+  align-content: start;
+}
+.media-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: var(--radius-card);
+  padding: 0;
+  text-align: left;
+}
+.media-tile-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-control);
+  background: var(--screen);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.media-tile-frame img, .media-tile-frame video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.media-tile-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.25);
+}
+.media-tile-active .media-tile-frame {
+  border-color: var(--accent);
+  border-width: 2px;
+}
+.media-tile-label {
+  font-size: 12px;
+  color: var(--ink2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 2px;
+}
+
+.media-detail-column {
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-height: 0;
+}
+.media-detail-frame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-monitor);
+  background: var(--screen);
+  overflow: hidden;
+  box-shadow: var(--shadow-raised);
+}
+.media-detail-frame img, .media-detail-frame video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.media-detail-name {
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: var(--sp-2);
+}
+.media-detail-meta {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink3);
+}
