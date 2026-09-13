@@ -10,8 +10,8 @@ who were handed the laptop ten minutes before the service starts.
 1. **Nothing live happens by accident.** Preview is where you stage; Live is where the
    congregation sees it. Only one control ever crosses that line, and it is labelled
    "Send to Live →".
-2. **Everything visible on one page.** Eight labelled tab buttons in a single top row —
-   no icon rail, no nested menus, no hidden drawers. A volunteer should never hunt.
+2. **Everything visible on one page.** Labelled tab buttons in a single top row — no icon
+   rail, no nested menus, no hidden drawers. A volunteer should never hunt.
 3. **Easy on the eyes for 90 minutes.** No pure black, no pure white, no saturated
    fills at panel scale. Colour is reserved for state, not decoration.
 4. **Roomy over dense.** Bigger targets and more breathing room beat fitting one more
@@ -108,7 +108,7 @@ Never below 9.5px, and only ever mono at that size. Body text never below 12.5px
 
 ```
 Title bar      app · service name · saved · theme toggle · ON AIR chip · window controls
-Tab row        Home  Live  Songs  Bible  Media  Themes  Stage  Settings
+Tab row        Home  Live  Songs  Bible  Media  Slides  Themes  Stage  Settings
 Screen         (varies — see below)
 Status bar     live item · state · output resolution · keyboard hints
 ```
@@ -144,6 +144,8 @@ monitor      16:9 output with song credits in the corner
 - **Songs** — sections list · title + lyric textarea + live slide split · details and arrangement.
 - **Bible** — translation and book · chapter grid · verse list with Add / Go live.
 - **Media** — filter pills, 16:9 thumbnail grid, selected-item panel with playback toggles.
+- **Slides** — imported PowerPoint library: 16:9 thumbnail grid (real rendered first slides, not
+  icons), selected-item panel with page-by-page navigation through that presentation.
 - **Themes** — theme list · large 16:9 preview · font, size, alignment, effects.
 - **Stage** — single large stage-display mock: clock, timer, current lyric, NEXT.
 - **Settings** — category list · labelled toggle rows with one line of plain-English help.

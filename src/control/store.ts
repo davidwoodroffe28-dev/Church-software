@@ -22,7 +22,7 @@ interface Selection {
 
 type Theme = 'dark' | 'light';
 
-export type ScreenTab = 'home' | 'live' | 'songs' | 'bible' | 'media' | 'themes' | 'stage' | 'settings';
+export type ScreenTab = 'home' | 'live' | 'songs' | 'bible' | 'media' | 'slides' | 'themes' | 'stage' | 'settings';
 
 interface AppState {
   loading: boolean;
@@ -72,6 +72,7 @@ interface AppState {
   // Presentations
   importPresentation: () => Promise<{ error: string | null; warning?: string }>;
   correctPresentationSlideCount: (id: string, slideCount: number) => Promise<void>;
+  deletePresentation: (id: string) => Promise<void>;
 
   // Playlist
   activePlaylist: () => Playlist | null;
@@ -398,6 +399,14 @@ export const useStore = create<AppState>((set, get) => ({
     const library = get().library;
     if (!library) return;
     const presentations = library.presentations.map((p) => (p.id === id ? { ...p, slideCount } : p));
+    await window.api.library.savePresentations(presentations);
+    set({ library: { ...library, presentations } });
+  },
+
+  deletePresentation: async (id) => {
+    const library = get().library;
+    if (!library) return;
+    const presentations = library.presentations.filter((p) => p.id !== id);
     await window.api.library.savePresentations(presentations);
     set({ library: { ...library, presentations } });
   },

@@ -1492,6 +1492,23 @@ label {
   color: var(--ink3);
 }
 
+.slides-page-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+}
+.slides-page-nav .transport-btn {
+  width: 36px;
+  height: 36px;
+}
+.slides-page-count {
+  font-size: 11px;
+  color: var(--ink3);
+  min-width: 40px;
+  text-align: center;
+}
+
 /* ---------- Themes screen ---------- */
 
 .themes-screen {

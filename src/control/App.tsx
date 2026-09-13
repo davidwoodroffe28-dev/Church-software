@@ -9,6 +9,7 @@ import { StageScreen } from './components/StageScreen';
 import { SongsScreen } from './components/SongsScreen';
 import { BibleScreen } from './components/BibleScreen';
 import { MediaScreen } from './components/MediaScreen';
+import { SlidesScreen } from './components/SlidesScreen';
 import { ThemesScreen } from './components/ThemesScreen';
 import { SettingsScreen } from './components/SettingsScreen';
 
@@ -43,6 +44,8 @@ export function App() {
           <BibleScreen />
         ) : tab === 'media' ? (
           <MediaScreen />
+        ) : tab === 'slides' ? (
+          <SlidesScreen />
         ) : tab === 'themes' ? (
           <ThemesScreen />
         ) : (
