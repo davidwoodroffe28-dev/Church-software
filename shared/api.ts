@@ -27,6 +27,7 @@ export interface OutputStatus {
 export interface ImportResult {
   presentation?: Presentation;
   error?: string;
+  warning?: string;
 }
 
 export interface SongImportResult {

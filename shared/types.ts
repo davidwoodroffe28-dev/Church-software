@@ -65,13 +65,43 @@ export interface BibleReference {
   verseEnd?: number;
 }
 
+export interface NativeTextRun {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  /** Font size as a percentage of slide height (resolution-independent; render with CSS container query units). */
+  fontSizePct?: number;
+  color?: string;
+}
+
+export interface NativeTextBox {
+  xPct: number;
+  yPct: number;
+  wPct: number;
+  hPct: number;
+  align: 'left' | 'center' | 'right';
+  paragraphs: { runs: NativeTextRun[] }[];
+}
+
+export interface NativeSlide {
+  backgroundColor?: string;
+  /** data: URI */
+  backgroundImage?: string;
+  textBoxes: NativeTextBox[];
+}
+
 export interface Presentation {
   id: string;
   name: string;
   /** Original .pptx/.ppt file the user imported */
   sourceFilePath: string;
-  /** PDF produced by converting the source file (via LibreOffice headless), rendered client-side with pdf.js */
-  pdfPath: string;
+  /** 'pdf': converted via a locally installed LibreOffice, rendered pixel-accurately with pdf.js.
+   *  'native': parsed directly from the .pptx XML with no external dependency — approximate layout
+   *  and fonts (no master/layout inheritance, no effects/animations), used automatically as a
+   *  fallback when LibreOffice isn't available. */
+  mode: 'pdf' | 'native';
+  pdfPath?: string;
+  nativeSlides?: NativeSlide[];
   slideCount: number;
   addedAt: number;
 }
@@ -109,10 +139,13 @@ export interface LiveSlide {
   label?: string;
   background?: Background;
   template?: Template;
-  /** For kind 'presentation': rendered client-side from this PDF page via pdf.js */
+  /** For kind 'presentation' (mode 'pdf'): rendered client-side from this PDF page via pdf.js */
   pdfPath?: string;
   pageNumber?: number;
   pageCount?: number;
+  /** For kind 'presentation' (mode 'native'): pre-parsed slide content, rendered as absolutely
+   *  positioned HTML/CSS instead of a PDF page. */
+  nativeSlide?: NativeSlide;
 }
 
 /** Broadcast to every output window; each renders it differently based on its role. */
@@ -124,6 +157,10 @@ export interface ProgramState {
   stageMessage?: string;
   /** Show a running clock on the stage display. */
   stageClock?: boolean;
+  /** Independent layer visibility, so "Clear Text" can drop the lyric/verse text while a video
+   *  background keeps looping, and vice versa. Both default to true when omitted. */
+  textVisible?: boolean;
+  backgroundVisible?: boolean;
 }
 
 export type OutputRole = 'program' | 'stage' | 'stream';

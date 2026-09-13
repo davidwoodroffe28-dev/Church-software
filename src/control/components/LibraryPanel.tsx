@@ -5,10 +5,16 @@ import { SongEditor } from './SongEditor';
 
 type Tab = 'songs' | 'media' | 'bible' | 'presentations';
 
-export function LibraryPanel() {
+interface LibraryPanelProps {
+  /** When embedded inside another panel (e.g. the Schedule panel's "+ Add Items" drawer), skip the
+   *  outer .panel chrome (border/padding) so it doesn't double up. */
+  embedded?: boolean;
+}
+
+export function LibraryPanel({ embedded = false }: LibraryPanelProps) {
   const [tab, setTab] = useState<Tab>('songs');
   return (
-    <div className="panel library-panel">
+    <div className={embedded ? 'library-panel' : 'panel library-panel'}>
       <div className="tab-bar">
         <button className={tab === 'songs' ? 'active' : ''} onClick={() => setTab('songs')}>Songs</button>
         <button className={tab === 'media' ? 'active' : ''} onClick={() => setTab('media')}>Media</button>
@@ -188,21 +194,29 @@ function PresentationsTab() {
   const importPresentation = useStore((s) => s.importPresentation);
   const addPlaylistItem = useStore((s) => s.addPlaylistItem);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   async function handleImport() {
     setError(null);
-    const err = await importPresentation();
-    if (err) setError(err);
+    setWarning(null);
+    const result = await importPresentation();
+    if (result.error) setError(result.error);
+    if (result.warning) setWarning(result.warning);
   }
 
   return (
     <div className="tab-body">
       <button onClick={handleImport}>+ Import PowerPoint…</button>
       {error && <p className="error-text">{error}</p>}
+      {warning && <p className="hint">{warning}</p>}
       <ul className="item-list">
         {library?.presentations.map((p) => (
           <li key={p.id}>
-            <span className="item-title">{p.name}{p.slideCount ? ` (${p.slideCount} slides)` : ''}</span>
+            <span className="item-title">
+              {p.name}
+              {p.slideCount ? ` (${p.slideCount} slides)` : ''}
+              {p.mode === 'native' && <span className="role-badge" title="Approximate layout — no LibreOffice found">approx.</span>}
+            </span>
             <div className="item-actions">
               <button
                 onClick={() =>

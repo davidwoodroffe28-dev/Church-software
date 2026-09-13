@@ -44,7 +44,12 @@ export function OutputApp() {
         }}
       >
         <div style={{ flex: 1, minHeight: 0 }}>
-          <SlideView slide={state.current} mode="stage" />
+          <SlideView
+            slide={state.current}
+            mode="stage"
+            textVisible={state.textVisible}
+            backgroundVisible={state.backgroundVisible}
+          />
         </div>
         <div
           style={{
@@ -69,7 +74,13 @@ export function OutputApp() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
-      <SlideView slide={state.current} mode={mode} chromaKey={chroma} />
+      <SlideView
+        slide={state.current}
+        mode={mode}
+        chromaKey={chroma}
+        textVisible={state.textVisible}
+        backgroundVisible={state.backgroundVisible}
+      />
     </div>
   );
 }

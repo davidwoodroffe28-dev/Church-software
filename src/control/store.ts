@@ -27,6 +27,8 @@ interface AppState {
   stageClock: boolean;
   liveItemId: string | null;
   liveSubIndex: number;
+  liveTextVisible: boolean;
+  liveBackgroundVisible: boolean;
   outputStatuses: OutputStatus[];
 
   load: () => Promise<void>;
@@ -43,7 +45,7 @@ interface AppState {
   deleteMedia: (id: string) => Promise<void>;
 
   // Presentations
-  importPresentation: () => Promise<string | null>; // returns error message, if any
+  importPresentation: () => Promise<{ error: string | null; warning?: string }>;
   correctPresentationSlideCount: (id: string, slideCount: number) => Promise<void>;
 
   // Playlist
@@ -51,12 +53,17 @@ interface AppState {
   addPlaylistItem: (item: Omit<PlaylistItem, 'id'>) => Promise<void>;
   removePlaylistItem: (itemId: string) => Promise<void>;
   moveItem: (itemId: string, direction: -1 | 1) => Promise<void>;
+  reorderItem: (draggedId: string, targetId: string) => Promise<void>;
 
   // Selection / live
   select: (itemId: string, subIndex?: number) => void;
   stepSubSlide: (direction: -1 | 1) => void;
   goLive: () => Promise<void>;
   clearLive: () => Promise<void>;
+  clearText: () => Promise<void>;
+  clearBackground: () => Promise<void>;
+  restoreText: () => Promise<void>;
+  restoreBackground: () => Promise<void>;
   setStageMessage: (text: string) => Promise<void>;
   setStageClock: (on: boolean) => Promise<void>;
 
@@ -90,6 +97,8 @@ function sendProgramState(get: () => AppState) {
     next,
     stageMessage: state.stageMessage,
     stageClock: state.stageClock,
+    textVisible: state.liveTextVisible,
+    backgroundVisible: state.liveBackgroundVisible,
   };
   window.api.live.goLive(programState);
 }
@@ -103,6 +112,8 @@ export const useStore = create<AppState>((set, get) => ({
   stageClock: true,
   liveItemId: null,
   liveSubIndex: 0,
+  liveTextVisible: true,
+  liveBackgroundVisible: true,
   outputStatuses: [],
 
   load: async () => {
@@ -195,14 +206,14 @@ export const useStore = create<AppState>((set, get) => ({
 
   importPresentation: async () => {
     const library = get().library;
-    if (!library) return 'Library not loaded yet.';
+    if (!library) return { error: 'Library not loaded yet.' };
     const result = await window.api.presentations.import();
-    if (result.error) return result.error;
-    if (!result.presentation) return null; // user canceled
+    if (result.error) return { error: result.error };
+    if (!result.presentation) return { error: null }; // user canceled
     const presentations = [...library.presentations, result.presentation];
     await window.api.library.savePresentations(presentations);
     set({ library: { ...library, presentations } });
-    return null;
+    return { error: null, warning: result.warning };
   },
 
   correctPresentationSlideCount: async (id, slideCount) => {
@@ -255,6 +266,21 @@ export const useStore = create<AppState>((set, get) => ({
     set({ library: { ...library, playlists } });
   },
 
+  reorderItem: async (draggedId, targetId) => {
+    const library = get().library;
+    const playlist = get().activePlaylist();
+    if (!library || !playlist || draggedId === targetId) return;
+    const items = [...playlist.items];
+    const fromIdx = items.findIndex((i) => i.id === draggedId);
+    const toIdx = items.findIndex((i) => i.id === targetId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    const [moved] = items.splice(fromIdx, 1);
+    items.splice(toIdx, 0, moved);
+    const playlists = library.playlists.map((p) => (p.id === playlist.id ? { ...p, items, updatedAt: Date.now() } : p));
+    await window.api.library.savePlaylists(playlists);
+    set({ library: { ...library, playlists } });
+  },
+
   select: (itemId, subIndex = 0) => set({ selection: { itemId, subIndex } }),
 
   stepSubSlide: (direction) => {
@@ -271,13 +297,38 @@ export const useStore = create<AppState>((set, get) => ({
   goLive: async () => {
     const { selection } = get();
     if (!selection.itemId) return;
-    set({ liveItemId: selection.itemId, liveSubIndex: selection.subIndex });
+    set({
+      liveItemId: selection.itemId,
+      liveSubIndex: selection.subIndex,
+      liveTextVisible: true,
+      liveBackgroundVisible: true,
+    });
     sendProgramState(get);
   },
 
   clearLive: async () => {
-    set({ liveItemId: null, liveSubIndex: 0 });
+    set({ liveItemId: null, liveSubIndex: 0, liveTextVisible: true, liveBackgroundVisible: true });
     await window.api.live.clear();
+  },
+
+  clearText: async () => {
+    set({ liveTextVisible: false });
+    sendProgramState(get);
+  },
+
+  clearBackground: async () => {
+    set({ liveBackgroundVisible: false });
+    sendProgramState(get);
+  },
+
+  restoreText: async () => {
+    set({ liveTextVisible: true });
+    sendProgramState(get);
+  },
+
+  restoreBackground: async () => {
+    set({ liveBackgroundVisible: true });
+    sendProgramState(get);
   },
 
   setStageMessage: async (text) => {

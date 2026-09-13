@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { app } from 'electron';
 import type { Presentation } from '@shared/types';
+import { parsePptxNative } from './pptxNative';
 
 const execFileAsync = promisify(execFile);
 
@@ -24,16 +25,24 @@ function presentationsDir(): string {
 export interface ImportResult {
   presentation?: Presentation;
   error?: string;
+  /** Non-fatal heads-up, e.g. "LibreOffice wasn't found, imported with reduced fidelity instead". */
+  warning?: string;
 }
 
-/**
- * Converts a .pptx/.ppt file to PDF using a locally installed LibreOffice, since there is no
- * pure-JS/cross-platform way to rasterize PowerPoint slides. The resulting PDF is then rendered
- * page-by-page in the renderer with pdf.js (no native deps needed there).
- */
-export async function importPresentation(sourceFilePath: string): Promise<ImportResult> {
+function newPresentationShell(sourceFilePath: string): Pick<Presentation, 'id' | 'name' | 'sourceFilePath' | 'addedAt'> {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name: path.basename(sourceFilePath, path.extname(sourceFilePath)),
+    sourceFilePath,
+    addedAt: Date.now(),
+  };
+}
+
+/** Converts via a locally installed LibreOffice for pixel-accurate rendering. Returns null (not a
+ *  thrown error) if LibreOffice isn't available or the conversion otherwise fails, so the caller can
+ *  fall back to the native parser. */
+async function tryLibreOfficeConvert(sourceFilePath: string): Promise<Presentation | null> {
   const outDir = presentationsDir();
-  let lastError: unknown = null;
 
   for (const candidate of SOFFICE_CANDIDATES) {
     try {
@@ -42,28 +51,57 @@ export async function importPresentation(sourceFilePath: string): Promise<Import
       });
       const base = path.basename(sourceFilePath, path.extname(sourceFilePath));
       const pdfPath = path.join(outDir, `${base}.pdf`);
-      if (!fs.existsSync(pdfPath)) {
-        lastError = new Error('LibreOffice ran but no PDF was produced.');
-        continue;
-      }
-      const presentation: Presentation = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        name: base,
-        sourceFilePath,
+      if (!fs.existsSync(pdfPath)) continue;
+      return {
+        ...newPresentationShell(sourceFilePath),
+        mode: 'pdf',
         pdfPath: `file://${pdfPath}`,
         slideCount: 0, // corrected by the renderer after the first pdf.js load
-        addedAt: Date.now(),
       };
-      return { presentation };
-    } catch (err) {
-      lastError = err;
+    } catch {
+      // try the next candidate / fall through to the native parser
     }
+  }
+  return null;
+}
+
+/** Best-effort, dependency-free fallback: reads the .pptx XML directly (approximate layout/fonts,
+ *  no master/layout inheritance or effects) — used automatically when LibreOffice isn't installed. */
+async function tryNativeParse(sourceFilePath: string): Promise<Presentation | null> {
+  try {
+    const buffer = fs.readFileSync(sourceFilePath);
+    const { slides } = await parsePptxNative(buffer);
+    if (!slides.length) return null;
+    return {
+      ...newPresentationShell(sourceFilePath),
+      mode: 'native',
+      nativeSlides: slides,
+      slideCount: slides.length,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function importPresentation(sourceFilePath: string): Promise<ImportResult> {
+  const viaLibreOffice = await tryLibreOfficeConvert(sourceFilePath);
+  if (viaLibreOffice) return { presentation: viaLibreOffice };
+
+  const viaNative = await tryNativeParse(sourceFilePath);
+  if (viaNative) {
+    return {
+      presentation: viaNative,
+      warning:
+        "LibreOffice wasn't found, so this was imported with the built-in reader instead: layout, fonts, " +
+        'and effects are approximate rather than pixel-accurate. Install LibreOffice (free, ' +
+        'https://www.libreoffice.org/) and re-import for an exact match to the original slides.',
+    };
   }
 
   return {
     error:
-      'Could not convert the PowerPoint file. This feature requires LibreOffice to be installed ' +
-      `(tried: ${SOFFICE_CANDIDATES.join(', ')}). Install it from https://www.libreoffice.org/ and try again.` +
-      (lastError instanceof Error ? ` Last error: ${lastError.message}` : ''),
+      'Could not import this PowerPoint file, either via LibreOffice or the built-in reader. Install ' +
+      'LibreOffice (https://www.libreoffice.org/) for the most reliable import, and confirm the file ' +
+      'is a valid, non-corrupt .pptx/.ppt.',
   };
 }

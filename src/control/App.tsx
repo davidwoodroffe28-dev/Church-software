@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useStore } from './store';
-import { LibraryPanel } from './components/LibraryPanel';
-import { PlaylistPanel } from './components/PlaylistPanel';
-import { PreviewLivePanel } from './components/PreviewLivePanel';
+import { SchedulePanel } from './components/SchedulePanel';
+import { SlideGridPanel } from './components/SlideGridPanel';
+import { LiveOutputPanel } from './components/LiveOutputPanel';
 
 export function App() {
   const loading = useStore((s) => s.loading);
@@ -22,9 +22,9 @@ export function App() {
         <h1>Church Presenter</h1>
       </header>
       <main className="app-body">
-        <LibraryPanel />
-        <PlaylistPanel />
-        <PreviewLivePanel />
+        <SchedulePanel />
+        <SlideGridPanel />
+        <LiveOutputPanel />
       </main>
     </div>
   );

@@ -1,5 +1,6 @@
 import type { LiveSlide } from '@shared/types';
 import { PdfPageCanvas } from './PdfPageCanvas';
+import { NativeSlideView } from './NativeSlideView';
 
 export type RenderMode = 'full' | 'stage' | 'stream';
 
@@ -10,6 +11,9 @@ interface Props {
   chromaKey?: string;
   /** Called when a presentation PDF reports its real page count, so the library record can be corrected. */
   onPresentationPageCount?: (count: number) => void;
+  /** Independent layer toggles driven by "Clear Text" / "Clear Background" — both default true. */
+  textVisible?: boolean;
+  backgroundVisible?: boolean;
 }
 
 /** Renders a template's background (solid color, or a looping motion image/video behind lyrics/scripture text). */
@@ -45,6 +49,9 @@ function FullFrameContent({ slide, onPresentationPageCount }: Pick<Props, 'slide
       </div>
     );
   }
+  if (slide.kind === 'presentation' && slide.nativeSlide) {
+    return <NativeSlideView slide={slide.nativeSlide} />;
+  }
   if (slide.kind === 'media' && slide.background) {
     return slide.background.type === 'video' ? (
       <video
@@ -61,7 +68,17 @@ function FullFrameContent({ slide, onPresentationPageCount }: Pick<Props, 'slide
   return null;
 }
 
-function TextSlide({ slide, asLowerThird }: { slide: LiveSlide; asLowerThird: boolean }) {
+function TextSlide({
+  slide,
+  asLowerThird,
+  textVisible = true,
+  backgroundVisible = true,
+}: {
+  slide: LiveSlide;
+  asLowerThird: boolean;
+  textVisible?: boolean;
+  backgroundVisible?: boolean;
+}) {
   const t = slide.template;
   const fontFamily = t?.fontFamily ?? 'sans-serif';
   const fontSize = t?.fontSize ?? 56;
@@ -71,62 +88,77 @@ function TextSlide({ slide, asLowerThird }: { slide: LiveSlide; asLowerThird: bo
   if (asLowerThird) {
     return (
       <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-        <div
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: '10%',
-            padding: '1.2em 2em',
-            background: 'rgba(0,0,0,0.55)',
-            color,
-            fontFamily,
-            fontSize: Math.min(fontSize, 48),
-            textAlign,
-            whiteSpace: 'pre-wrap',
-          }}
-        >
-          {slide.text}
-        </div>
+        {textVisible && (
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: '10%',
+              padding: '1.2em 2em',
+              background: 'rgba(0,0,0,0.55)',
+              color,
+              fontFamily,
+              fontSize: Math.min(fontSize, 48),
+              textAlign,
+              whiteSpace: 'pre-wrap',
+            }}
+          >
+            {slide.text}
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <BackgroundLayer background={slide.background} />
-      <div
-        style={{
-          position: 'relative',
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '4em',
-          boxSizing: 'border-box',
-        }}
-      >
+      {backgroundVisible ? (
+        <BackgroundLayer background={slide.background} />
+      ) : (
+        <div style={{ position: 'absolute', inset: 0, background: '#000000' }} />
+      )}
+      {textVisible && (
         <div
           style={{
-            color,
-            fontFamily,
-            fontSize,
-            textAlign,
-            whiteSpace: 'pre-wrap',
-            lineHeight: 1.3,
-            textShadow: '0 2px 12px rgba(0,0,0,0.6)',
-            maxWidth: '100%',
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '4em',
+            boxSizing: 'border-box',
           }}
         >
-          {slide.text}
+          <div
+            style={{
+              color,
+              fontFamily,
+              fontSize,
+              textAlign,
+              whiteSpace: 'pre-wrap',
+              lineHeight: 1.3,
+              textShadow: '0 2px 12px rgba(0,0,0,0.6)',
+              maxWidth: '100%',
+            }}
+          >
+            {slide.text}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-export function SlideView({ slide, mode, chromaKey = '#00ff00', onPresentationPageCount }: Props) {
+export function SlideView({
+  slide,
+  mode,
+  chromaKey = '#00ff00',
+  onPresentationPageCount,
+  textVisible = true,
+  backgroundVisible = true,
+}: Props) {
   const isTextKind = slide.kind === 'song' || slide.kind === 'verse' || slide.kind === 'lowerThird';
   const isFullFrameKind = slide.kind === 'media' || slide.kind === 'presentation';
 
@@ -136,7 +168,7 @@ export function SlideView({ slide, mode, chromaKey = '#00ff00', onPresentationPa
     // program feed instead, so this output stays keyed-out/blank for it.
     return (
       <div style={{ width: '100%', height: '100%', background: chromaKey }}>
-        {isTextKind && <TextSlide slide={slide} asLowerThird />}
+        {isTextKind && <TextSlide slide={slide} asLowerThird textVisible={textVisible} />}
       </div>
     );
   }
@@ -146,13 +178,21 @@ export function SlideView({ slide, mode, chromaKey = '#00ff00', onPresentationPa
   }
 
   if (isFullFrameKind) {
+    // Media loops and presentation slides are the "background" layer — Clear Background blanks them.
     return (
       <div style={{ width: '100%', height: '100%', background: '#000000' }}>
-        <FullFrameContent slide={slide} onPresentationPageCount={onPresentationPageCount} />
+        {backgroundVisible && <FullFrameContent slide={slide} onPresentationPageCount={onPresentationPageCount} />}
       </div>
     );
   }
 
   // song / verse / lowerThird on 'full' (program) or 'stage' (confidence monitor)
-  return <TextSlide slide={slide} asLowerThird={mode === 'full' && !!slide.template?.lowerThird} />;
+  return (
+    <TextSlide
+      slide={slide}
+      asLowerThird={mode === 'full' && !!slide.template?.lowerThird}
+      textVisible={textVisible}
+      backgroundVisible={backgroundVisible}
+    />
+  );
 }

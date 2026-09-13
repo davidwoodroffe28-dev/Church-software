@@ -86,7 +86,17 @@ export function buildLiveSlide(item: PlaylistItem, subIndex: number, library: Li
     case 'presentation': {
       const presentation = library.presentations.find((p) => p.id === item.presentationId);
       if (!presentation) return { kind: 'blank' };
-      const pageNumber = Math.min(subIndex, Math.max(0, presentation.slideCount - 1)) + 1;
+      const index = Math.min(subIndex, Math.max(0, presentation.slideCount - 1));
+      const pageNumber = index + 1;
+      if (presentation.mode === 'native') {
+        return {
+          kind: 'presentation',
+          label: `${presentation.name} — Slide ${pageNumber}`,
+          nativeSlide: presentation.nativeSlides?.[index],
+          pageNumber,
+          pageCount: presentation.slideCount,
+        };
+      }
       return {
         kind: 'presentation',
         label: `${presentation.name} — Slide ${pageNumber}`,
