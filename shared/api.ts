@@ -24,6 +24,14 @@ export interface OutputStatus {
   open: boolean;
 }
 
+export interface RemoteStatus {
+  running: boolean;
+  url: string | null;
+  qrDataUrl: string | null;
+}
+
+export type RemoteActionType = 'next' | 'prev' | 'black' | 'clear';
+
 export interface ImportResult {
   presentation?: Presentation;
   error?: string;
@@ -78,6 +86,12 @@ export interface ControlApi {
     getChapterCount: (translationCode: string, book: string) => Promise<number>;
     getChapterVerses: (translationCode: string, book: string, chapter: number) => Promise<BibleVerse[]>;
     search: (translationCode: string, query: string) => Promise<BibleVerse[]>;
+  };
+  remote: {
+    start: () => Promise<RemoteStatus>;
+    stop: () => Promise<boolean>;
+    getStatus: () => Promise<RemoteStatus>;
+    onAction: (cb: (type: RemoteActionType) => void) => () => void;
   };
 }
 

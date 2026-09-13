@@ -7,6 +7,7 @@ import { importPresentation } from './presentations';
 import { importSongFile, importSongsFromFolder } from './songImport';
 import { importEasyWorshipDatabase } from './easyworshipImport';
 import { TRANSLATIONS, getBooks, getChapterCount, getChapterVerses, searchVerses } from './bible';
+import { startRemoteServer, stopRemoteServer, getRemoteStatusWithQr, updateRemoteState, type RemoteActionType } from './remoteServer';
 import type { MediaItem, OutputConfig, ProgramState } from '@shared/types';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -260,6 +261,7 @@ ipcMain.handle(Channels.GoLive, (_e, state: ProgramState) => {
   for (const win of outputWindows.values()) {
     win.webContents.send(Channels.ProgramStateUpdate, state);
   }
+  updateRemoteState(state);
   return true;
 });
 
@@ -268,8 +270,24 @@ ipcMain.handle(Channels.ClearLive, () => {
   for (const win of outputWindows.values()) {
     win.webContents.send(Channels.ProgramStateUpdate, lastProgramState);
   }
+  updateRemoteState(lastProgramState);
   return true;
 });
+
+ipcMain.handle(Channels.RemoteStart, async () => {
+  startRemoteServer((type: RemoteActionType) => {
+    controlWindow?.webContents.send(Channels.RemoteAction, type);
+  });
+  updateRemoteState(lastProgramState);
+  return getRemoteStatusWithQr();
+});
+
+ipcMain.handle(Channels.RemoteStop, () => {
+  stopRemoteServer();
+  return true;
+});
+
+ipcMain.handle(Channels.RemoteGetStatus, () => getRemoteStatusWithQr());
 
 ipcMain.handle(Channels.ListDisplays, () => {
   const primaryId = screen.getPrimaryDisplay().id;

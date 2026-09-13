@@ -4,7 +4,7 @@ import type { DisplayInfo } from '@shared/api';
 import { useStore } from '../store';
 import { Toggle } from './Toggle';
 
-type Category = 'outputs' | 'appearance';
+type Category = 'outputs' | 'appearance' | 'remote';
 
 const ROLE_HELP: Record<OutputConfig['role'], string> = {
   program: 'The main audience/projector feed — background plus text, or full-frame media and slides.',
@@ -24,13 +24,16 @@ export function SettingsScreen() {
         <button className={'settings-category' + (category === 'outputs' ? ' settings-category-active' : '')} onClick={() => setCategory('outputs')}>
           Outputs
         </button>
+        <button className={'settings-category' + (category === 'remote' ? ' settings-category-active' : '')} onClick={() => setCategory('remote')}>
+          Remote Control
+        </button>
         <button className={'settings-category' + (category === 'appearance' ? ' settings-category-active' : '')} onClick={() => setCategory('appearance')}>
           Appearance
         </button>
       </div>
 
       <div className="settings-content-column">
-        {category === 'outputs' ? <OutputsSettingsPanel /> : <AppearanceSettingsPanel />}
+        {category === 'outputs' ? <OutputsSettingsPanel /> : category === 'remote' ? <RemoteSettingsPanel /> : <AppearanceSettingsPanel />}
       </div>
     </div>
   );
@@ -82,6 +85,41 @@ function OutputsSettingsPanel() {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function RemoteSettingsPanel() {
+  const status = useStore((s) => s.remoteStatus);
+  const busy = useStore((s) => s.remoteBusy);
+  const startRemote = useStore((s) => s.startRemote);
+  const stopRemote = useStore((s) => s.stopRemote);
+
+  return (
+    <div className="settings-panel">
+      <div className="screen-title">Remote control</div>
+      <div className="settings-row">
+        <div className="settings-row-main">
+          <Toggle checked={status.running} onChange={(v) => (v ? startRemote() : stopRemote())} disabled={busy} />
+          <div className="settings-row-text">
+            <div className="settings-row-label">Allow phones on this network to control Live</div>
+            <div className="hint">
+              Advance/back, Black, and Clear — the same as the keyboard shortcuts. Local network only; nothing
+              leaves this building. Anyone with the link below can control the output, so treat it like a key.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {status.running && status.url && (
+        <div className="remote-connect">
+          {status.qrDataUrl && <img className="remote-qr" src={status.qrDataUrl} alt="Scan to connect" />}
+          <div className="remote-connect-text">
+            <div className="hint">Scan with a phone on the same Wi-Fi, or open:</div>
+            <div className="mono remote-url">{status.url}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

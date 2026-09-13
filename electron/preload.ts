@@ -45,6 +45,16 @@ const api: ControlApi = {
       ipcRenderer.invoke(Channels.BibleGetChapterVerses, translationCode, book, chapter),
     search: (translationCode, query) => ipcRenderer.invoke(Channels.BibleSearch, translationCode, query),
   },
+  remote: {
+    start: () => ipcRenderer.invoke(Channels.RemoteStart),
+    stop: () => ipcRenderer.invoke(Channels.RemoteStop),
+    getStatus: () => ipcRenderer.invoke(Channels.RemoteGetStatus),
+    onAction: (cb) => {
+      const listener = (_e: unknown, type: Parameters<typeof cb>[0]) => cb(type);
+      ipcRenderer.on(Channels.RemoteAction, listener);
+      return () => ipcRenderer.removeListener(Channels.RemoteAction, listener);
+    },
+  },
 };
 
 contextBridge.exposeInMainWorld('api', api);

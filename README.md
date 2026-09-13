@@ -113,8 +113,13 @@ For a hardware switcher (ATEM, etc.) instead of OBS/vMix: assign the Stream outp
 display connected to the switcher's HDMI input, set its chroma key, and key it out on the switcher —
 no in-app streaming/encoding involved, this app only ever produces the graphics layer.
 
-Configure outputs from **Outputs…** in the control window (display assignment, chroma key color,
-enable/disable per role).
+Configure outputs from **Settings → Outputs** (display assignment, chroma key color, enable/disable
+per role).
+
+- **Mobile remote control** — a Wi-Fi-only local web page (Settings → Remote Control, connect by
+  scanning the shown QR code) lets a phone or tablet advance/back, Black, and Clear without touching
+  the booth laptop. Runs a small local HTTP+SSE server on the machine only; nothing goes over the
+  internet, and a random per-session token gates every request.
 
 ## Bible data license
 

@@ -163,6 +163,12 @@ export function installDevApiMock() {
       search: async (_translation, query) =>
         query.trim() ? sampleVerses.filter((v) => v.book.toLowerCase().includes(query.toLowerCase())) : [],
     },
+    remote: {
+      start: async () => ({ running: false, url: null, qrDataUrl: null }),
+      stop: async () => true,
+      getStatus: async () => ({ running: false, url: null, qrDataUrl: null }),
+      onAction: () => () => {},
+    },
   };
 
   (window as unknown as { api: ControlApi }).api = mockApi;

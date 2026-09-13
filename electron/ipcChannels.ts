@@ -34,4 +34,11 @@ export const Channels = {
   BibleGetChapterCount: 'bible:getChapterCount',
   BibleGetChapterVerses: 'bible:getChapterVerses',
   BibleSearch: 'bible:search',
+
+  // Mobile remote control (LAN-only local HTTP+SSE server; see electron/remoteServer.ts)
+  RemoteStart: 'remote:start',
+  RemoteStop: 'remote:stop',
+  RemoteGetStatus: 'remote:getStatus',
+  // main -> control window, when a phone triggers an action
+  RemoteAction: 'remote:action',
 } as const;

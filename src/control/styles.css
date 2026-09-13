@@ -1592,3 +1592,31 @@ label {
   gap: 8px;
   flex-shrink: 0;
 }
+
+.remote-connect {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-6);
+  padding: var(--sp-5);
+  margin-top: var(--sp-2);
+  background: var(--panel2);
+  border-radius: var(--radius-card);
+}
+.remote-qr {
+  width: 120px;
+  height: 120px;
+  border-radius: var(--radius-control);
+  background: #ffffff;
+  padding: 6px;
+  flex-shrink: 0;
+}
+.remote-connect-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.remote-url {
+  font-size: 13px;
+  color: var(--ink);
+  word-break: break-all;
+}

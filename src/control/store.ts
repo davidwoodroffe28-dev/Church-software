@@ -12,7 +12,7 @@ import type {
   SongSection,
   Template,
 } from '@shared/types';
-import type { OutputStatus } from '@shared/api';
+import type { OutputStatus, RemoteStatus } from '@shared/api';
 import { buildLiveSlide, getNextSlide, getSubSlideCount } from './slideBuilder';
 
 interface Selection {
@@ -38,6 +38,8 @@ interface AppState {
   outputStatuses: OutputStatus[];
   theme: Theme;
   activeScreen: ScreenTab;
+  remoteStatus: RemoteStatus;
+  remoteBusy: boolean;
 
   load: () => Promise<void>;
   toggleTheme: () => void;
@@ -95,6 +97,10 @@ interface AppState {
   // Outputs
   saveOutputConfigs: (configs: OutputConfig[]) => Promise<void>;
   refreshOutputStatuses: () => void;
+
+  // Mobile remote control
+  startRemote: () => Promise<void>;
+  stopRemote: () => Promise<void>;
 }
 
 function sendProgramState(get: () => AppState) {
@@ -143,6 +149,8 @@ export const useStore = create<AppState>((set, get) => ({
   outputStatuses: [],
   theme: loadStoredTheme(),
   activeScreen: 'home',
+  remoteStatus: { running: false, url: null, qrDataUrl: null },
+  remoteBusy: false,
 
   setActiveScreen: (screen) => set({ activeScreen: screen }),
 
@@ -194,6 +202,18 @@ export const useStore = create<AppState>((set, get) => ({
     window.api.displays.onStatus((statuses) => set({ outputStatuses: statuses }));
     const initialStatuses = await window.api.displays.getStatus();
     set({ outputStatuses: initialStatuses });
+
+    // A phone connected to the remote-control page (Settings > Remote Control) sends these —
+    // route them through the same actions the control window's own buttons/keyboard use.
+    window.api.remote.onAction((type) => {
+      const state = get();
+      if (type === 'next') state.stepLive(1);
+      else if (type === 'prev') state.stepLive(-1);
+      else if (type === 'black') state.toggleBlack();
+      else if (type === 'clear') (state.liveTextVisible ? state.clearText : state.restoreText)();
+    });
+    const remoteStatus = await window.api.remote.getStatus();
+    set({ remoteStatus });
   },
 
   upsertSong: async (song) => {
@@ -483,6 +503,18 @@ export const useStore = create<AppState>((set, get) => ({
 
   refreshOutputStatuses: () => {
     window.api.displays.sync();
+  },
+
+  startRemote: async () => {
+    set({ remoteBusy: true });
+    const remoteStatus = await window.api.remote.start();
+    set({ remoteStatus, remoteBusy: false });
+  },
+
+  stopRemote: async () => {
+    set({ remoteBusy: true });
+    await window.api.remote.stop();
+    set({ remoteStatus: { running: false, url: null, qrDataUrl: null }, remoteBusy: false });
   },
 }));
 
