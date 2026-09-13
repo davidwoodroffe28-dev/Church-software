@@ -8,10 +8,10 @@ import { HomeScreen } from './components/HomeScreen';
 import { LiveScreen } from './components/LiveScreen';
 import { StageScreen } from './components/StageScreen';
 import { SongsScreen } from './components/SongsScreen';
+import { BibleScreen } from './components/BibleScreen';
 import { ComingSoon } from './components/ComingSoon';
 
-const SCREEN_LABELS: Record<Exclude<ScreenTab, 'live' | 'stage' | 'home' | 'songs'>, string> = {
-  bible: 'Bible',
+const SCREEN_LABELS: Record<Exclude<ScreenTab, 'live' | 'stage' | 'home' | 'songs' | 'bible'>, string> = {
   media: 'Media',
   themes: 'Themes',
   settings: 'Settings',
@@ -44,6 +44,8 @@ export function App() {
           <StageScreen />
         ) : tab === 'songs' ? (
           <SongsScreen />
+        ) : tab === 'bible' ? (
+          <BibleScreen />
         ) : (
           <ComingSoon screen={SCREEN_LABELS[tab]} />
         )}

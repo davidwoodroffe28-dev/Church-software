@@ -74,6 +74,16 @@ export function getBooks(translationCode: string): string[] {
   return loadTranslation(translationCode).bookOrder;
 }
 
+export function getChapterCount(translationCode: string, book: string): number {
+  const { verses } = loadTranslation(translationCode);
+  return verses.reduce((max, v) => (v.book === book && v.chapter > max ? v.chapter : max), 0);
+}
+
+export function getChapterVerses(translationCode: string, book: string, chapter: number): BibleVerse[] {
+  const { verses } = loadTranslation(translationCode);
+  return verses.filter((v) => v.book === book && v.chapter === chapter).sort((a, b) => a.verse - b.verse);
+}
+
 export function searchVerses(translationCode: string, query: string): BibleVerse[] {
   const { verses } = loadTranslation(translationCode);
   const q = query.trim().toLowerCase();

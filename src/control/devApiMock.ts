@@ -144,6 +144,14 @@ export function installDevApiMock() {
     bible: {
       getTranslations: async () => [{ code: 'kjv', name: 'King James Version' }],
       getBooks: async () => ['Genesis', 'Psalms', 'John', 'Romans'],
+      getChapterCount: async () => 8,
+      getChapterVerses: async (_translation, book, chapter) =>
+        Array.from({ length: 6 }, (_, i) => ({
+          book,
+          chapter,
+          verse: i + 1,
+          text: `Sample verse text for ${book} ${chapter}:${i + 1} — the browser preview doesn't load the real Bible dataset.`,
+        })),
       search: async (_translation, query) =>
         query.trim() ? sampleVerses.filter((v) => v.book.toLowerCase().includes(query.toLowerCase())) : [],
     },

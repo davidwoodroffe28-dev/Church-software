@@ -61,7 +61,7 @@ interface AppState {
 
   // Playlist
   activePlaylist: () => Playlist | null;
-  addPlaylistItem: (item: Omit<PlaylistItem, 'id'>) => Promise<void>;
+  addPlaylistItem: (item: Omit<PlaylistItem, 'id'>) => Promise<PlaylistItem>;
   removePlaylistItem: (itemId: string) => Promise<void>;
   moveItem: (itemId: string, direction: -1 | 1) => Promise<void>;
   /** targetId null = drop past the last item (append at the end). */
@@ -284,15 +284,16 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   addPlaylistItem: async (itemData) => {
+    const item: PlaylistItem = { ...itemData, id: uuid() };
     const library = get().library;
     const playlist = get().activePlaylist();
-    if (!library || !playlist) return;
-    const item: PlaylistItem = { ...itemData, id: uuid() };
+    if (!library || !playlist) return item;
     const playlists = library.playlists.map((p) =>
       p.id === playlist.id ? { ...p, items: [...p.items, item], updatedAt: Date.now() } : p
     );
     await window.api.library.savePlaylists(playlists);
     set({ library: { ...library, playlists } });
+    return item;
   },
 
   removePlaylistItem: async (itemId) => {

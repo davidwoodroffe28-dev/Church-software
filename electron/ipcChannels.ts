@@ -31,5 +31,7 @@ export const Channels = {
   // Bible lookup (bundled multi-translation dataset, see resources/bible/)
   BibleGetTranslations: 'bible:getTranslations',
   BibleGetBooks: 'bible:getBooks',
+  BibleGetChapterCount: 'bible:getChapterCount',
+  BibleGetChapterVerses: 'bible:getChapterVerses',
   BibleSearch: 'bible:search',
 } as const;

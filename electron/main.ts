@@ -6,7 +6,7 @@ import { getLibrary, store } from './store';
 import { importPresentation } from './presentations';
 import { importSongFile, importSongsFromFolder } from './songImport';
 import { importEasyWorshipDatabase } from './easyworshipImport';
-import { TRANSLATIONS, getBooks, searchVerses } from './bible';
+import { TRANSLATIONS, getBooks, getChapterCount, getChapterVerses, searchVerses } from './bible';
 import type { MediaItem, OutputConfig, ProgramState } from '@shared/types';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -285,6 +285,14 @@ ipcMain.handle(Channels.GetOutputStatus, () => computeOutputStatuses());
 ipcMain.handle(Channels.BibleGetTranslations, () => TRANSLATIONS);
 
 ipcMain.handle(Channels.BibleGetBooks, (_e, translationCode: string) => getBooks(translationCode));
+
+ipcMain.handle(Channels.BibleGetChapterCount, (_e, translationCode: string, book: string) =>
+  getChapterCount(translationCode, book)
+);
+
+ipcMain.handle(Channels.BibleGetChapterVerses, (_e, translationCode: string, book: string, chapter: number) =>
+  getChapterVerses(translationCode, book, chapter)
+);
 
 ipcMain.handle(Channels.BibleSearch, (_e, translationCode: string, query: string) =>
   searchVerses(translationCode, query)

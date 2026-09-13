@@ -40,6 +40,9 @@ const api: ControlApi = {
   bible: {
     getTranslations: () => ipcRenderer.invoke(Channels.BibleGetTranslations),
     getBooks: (translationCode) => ipcRenderer.invoke(Channels.BibleGetBooks, translationCode),
+    getChapterCount: (translationCode, book) => ipcRenderer.invoke(Channels.BibleGetChapterCount, translationCode, book),
+    getChapterVerses: (translationCode, book, chapter) =>
+      ipcRenderer.invoke(Channels.BibleGetChapterVerses, translationCode, book, chapter),
     search: (translationCode, query) => ipcRenderer.invoke(Channels.BibleSearch, translationCode, query),
   },
 };

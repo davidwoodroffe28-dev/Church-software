@@ -75,6 +75,8 @@ export interface ControlApi {
   bible: {
     getTranslations: () => Promise<{ code: string; name: string }[]>;
     getBooks: (translationCode: string) => Promise<string[]>;
+    getChapterCount: (translationCode: string, book: string) => Promise<number>;
+    getChapterVerses: (translationCode: string, book: string, chapter: number) => Promise<BibleVerse[]>;
     search: (translationCode: string, query: string) => Promise<BibleVerse[]>;
   };
 }
