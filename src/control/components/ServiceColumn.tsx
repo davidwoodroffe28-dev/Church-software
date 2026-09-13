@@ -2,6 +2,15 @@ import { useState } from 'react';
 import { useStore, useActivePlaylist } from '../store';
 import { itemTypeMeta } from '../itemType';
 
+function LoopIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={active ? 'var(--type-slides)' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+    </svg>
+  );
+}
+
 export function ServiceColumn() {
   const activePlaylist = useActivePlaylist();
   const selection = useStore((s) => s.selection);
@@ -14,10 +23,16 @@ export function ServiceColumn() {
   const redoStack = useStore((s) => s.scheduleRedoStack);
   const undoSchedule = useStore((s) => s.undoSchedule);
   const redoSchedule = useStore((s) => s.redoSchedule);
+  const togglePreServiceLoopItem = useStore((s) => s.togglePreServiceLoopItem);
+  const preServiceLoop = useStore((s) => s.preServiceLoop);
+  const startPreServiceLoop = useStore((s) => s.startPreServiceLoop);
+  const stopPreServiceLoop = useStore((s) => s.stopPreServiceLoop);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<{ id: string; position: 'before' | 'after' } | null>(null);
+  const [intervalInput, setIntervalInput] = useState(String(preServiceLoop.intervalSec));
 
   const items = activePlaylist?.items ?? [];
+  const loopCount = items.filter((i) => i.loopSlide).length;
 
   return (
     <div className="service-column">
@@ -105,6 +120,13 @@ export function ServiceColumn() {
               </div>
               {isLive && <span className="live-dot" title="On air" />}
               <button
+                className="row-icon-btn"
+                onClick={(e) => { e.stopPropagation(); togglePreServiceLoopItem(item.id); }}
+                title={item.loopSlide ? 'Remove from pre-service loop' : 'Add to pre-service loop'}
+              >
+                <LoopIcon active={!!item.loopSlide} />
+              </button>
+              <button
                 className="row-remove"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -124,6 +146,33 @@ export function ServiceColumn() {
           <div className={'end-dropzone' + (dragOver?.id === '__end__' ? ' active' : '')} />
         )}
       </div>
+
+      {loopCount > 0 && (
+        <div className="loop-panel">
+          <div className="mono loop-panel-label">
+            PRE-SERVICE LOOP · {loopCount} SLIDE{loopCount === 1 ? '' : 'S'}
+          </div>
+          <div className="loop-panel-controls">
+            <input
+              type="number"
+              min={2}
+              max={120}
+              value={intervalInput}
+              onChange={(e) => setIntervalInput(e.target.value)}
+              disabled={preServiceLoop.active}
+              className="loop-interval-input"
+            />
+            <span className="hint">sec</span>
+            {preServiceLoop.active ? (
+              <button className="loop-stop-btn" onClick={stopPreServiceLoop}>Stop loop</button>
+            ) : (
+              <button className="primary" onClick={() => startPreServiceLoop(Math.max(2, Number(intervalInput) || 8))}>
+                Start loop
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -42,6 +42,7 @@ interface AppState {
   remoteBusy: boolean;
   scheduleUndoStack: PlaylistItem[][];
   scheduleRedoStack: PlaylistItem[][];
+  preServiceLoop: { active: boolean; intervalSec: number };
 
   load: () => Promise<void>;
   toggleTheme: () => void;
@@ -83,6 +84,11 @@ interface AppState {
    *  is active when the undo/redo stacks are read (they're cleared on switching services). */
   undoSchedule: () => Promise<void>;
   redoSchedule: () => Promise<void>;
+
+  // Pre-service auto-advance loop
+  togglePreServiceLoopItem: (itemId: string) => Promise<void>;
+  startPreServiceLoop: (intervalSec: number) => void;
+  stopPreServiceLoop: () => void;
 
   // Selection / live
   select: (itemId: string, subIndex?: number) => void;
@@ -145,6 +151,31 @@ function applyThemeToDocument(theme: Theme) {
   document.documentElement.setAttribute('data-theme', theme);
 }
 
+let preServiceLoopTimer: ReturnType<typeof setInterval> | null = null;
+
+/** Advances live to the next item marked loopSlide, wrapping around — used only by the
+ *  pre-service loop's own timer, never by the manual goLive path (which calls
+ *  stopPreServiceLoopTimer instead, since a manual action means the operator has taken over). */
+function advancePreServiceLoop(get: () => AppState, set: (partial: Partial<AppState>) => void) {
+  const library = get().library;
+  const playlist = get().activePlaylist();
+  if (!library || !playlist) return;
+  const loopItems = playlist.items.filter((i) => i.loopSlide);
+  if (loopItems.length === 0) return;
+  const currentIdx = loopItems.findIndex((i) => i.id === get().liveItemId);
+  const nextItem = loopItems[(currentIdx + 1) % loopItems.length];
+  set({ liveItemId: nextItem.id, liveSubIndex: 0, liveTextVisible: true, liveBackgroundVisible: true });
+  sendProgramState(get);
+}
+
+function stopPreServiceLoopTimer(get: () => AppState, set: (partial: Partial<AppState>) => void) {
+  if (preServiceLoopTimer) {
+    clearInterval(preServiceLoopTimer);
+    preServiceLoopTimer = null;
+  }
+  if (get().preServiceLoop.active) set({ preServiceLoop: { ...get().preServiceLoop, active: false } });
+}
+
 const SCHEDULE_UNDO_LIMIT = 50;
 
 /** Captures the active playlist's current items onto the undo stack and clears redo — called at
@@ -175,6 +206,7 @@ export const useStore = create<AppState>((set, get) => ({
   remoteBusy: false,
   scheduleUndoStack: [],
   scheduleRedoStack: [],
+  preServiceLoop: { active: false, intervalSec: 8 },
 
   setActiveScreen: (screen) => set({ activeScreen: screen }),
 
@@ -472,6 +504,27 @@ export const useStore = create<AppState>((set, get) => ({
     });
   },
 
+  togglePreServiceLoopItem: async (itemId) => {
+    const library = get().library;
+    const playlist = get().activePlaylist();
+    if (!library || !playlist) return;
+    const items = playlist.items.map((i) => (i.id === itemId ? { ...i, loopSlide: !i.loopSlide } : i));
+    const playlists = library.playlists.map((p) => (p.id === playlist.id ? { ...p, items, updatedAt: Date.now() } : p));
+    await window.api.library.savePlaylists(playlists);
+    set({ library: { ...library, playlists } });
+  },
+
+  startPreServiceLoop: (intervalSec) => {
+    const playlist = get().activePlaylist();
+    if (!playlist?.items.some((i) => i.loopSlide)) return;
+    if (preServiceLoopTimer) clearInterval(preServiceLoopTimer);
+    set({ preServiceLoop: { active: true, intervalSec } });
+    advancePreServiceLoop(get, set);
+    preServiceLoopTimer = setInterval(() => advancePreServiceLoop(get, set), intervalSec * 1000);
+  },
+
+  stopPreServiceLoop: () => stopPreServiceLoopTimer(get, set),
+
   select: (itemId, subIndex = 0) => set({ selection: { itemId, subIndex } }),
 
   stepSubSlide: (direction) => {
@@ -486,6 +539,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   stepLive: (direction) => {
+    stopPreServiceLoopTimer(get, set);
     const { liveItemId, liveSubIndex, library } = get();
     const playlist = get().activePlaylist();
     if (!liveItemId || !library || !playlist) return;
@@ -516,11 +570,13 @@ export const useStore = create<AppState>((set, get) => ({
 
   setLiveSubIndex: (subIndex) => {
     if (!get().liveItemId) return;
+    stopPreServiceLoopTimer(get, set);
     set({ liveSubIndex: subIndex, liveTextVisible: true, liveBackgroundVisible: true });
     sendProgramState(get);
   },
 
   goLive: async () => {
+    stopPreServiceLoopTimer(get, set);
     const { selection } = get();
     if (!selection.itemId) return;
     set({
@@ -533,6 +589,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   clearLive: async () => {
+    stopPreServiceLoopTimer(get, set);
     set({ liveItemId: null, liveSubIndex: 0, liveTextVisible: true, liveBackgroundVisible: true });
     await window.api.live.clear();
   },

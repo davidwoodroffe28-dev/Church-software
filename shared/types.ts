@@ -134,6 +134,9 @@ export interface PlaylistItem {
   slideIndex?: number;
   templateId?: string;
   label: string;
+  /** Marked for the pre-service auto-advance loop (announcements/media cycling on Program before
+   *  the service starts) — see AppState.preServiceLoop in the control store. */
+  loopSlide?: boolean;
 }
 
 export interface Playlist {
