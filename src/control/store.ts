@@ -19,6 +19,8 @@ interface Selection {
   subIndex: number;
 }
 
+type Theme = 'dark' | 'light';
+
 interface AppState {
   loading: boolean;
   library: LibraryData | null;
@@ -31,8 +33,10 @@ interface AppState {
   liveTextVisible: boolean;
   liveBackgroundVisible: boolean;
   outputStatuses: OutputStatus[];
+  theme: Theme;
 
   load: () => Promise<void>;
+  toggleTheme: () => void;
 
   // Songs
   upsertSong: (song: Song) => Promise<void>;
@@ -60,12 +64,20 @@ interface AppState {
   // Selection / live
   select: (itemId: string, subIndex?: number) => void;
   stepSubSlide: (direction: -1 | 1) => void;
+  /** Advances the on-air slide directly (Live pane's own transport), independent of Preview's
+   *  selection — crosses into the next/previous service item once the current one runs out. */
+  stepLive: (direction: -1 | 1) => void;
+  /** Jumps the on-air slide directly to a sub-slide within the current live item (e.g. clicking a
+   *  specific verse row in the Live pane's slide list). */
+  setLiveSubIndex: (subIndex: number) => void;
   goLive: () => Promise<void>;
   clearLive: () => Promise<void>;
   clearText: () => Promise<void>;
   clearBackground: () => Promise<void>;
   restoreText: () => Promise<void>;
   restoreBackground: () => Promise<void>;
+  /** "Black" — blanks both text and background at once; toggling again restores both. */
+  toggleBlack: () => Promise<void>;
   setStageMessage: (text: string) => Promise<void>;
   setStageClock: (on: boolean) => Promise<void>;
 
@@ -105,6 +117,18 @@ function sendProgramState(get: () => AppState) {
   window.api.live.goLive(programState);
 }
 
+function loadStoredTheme(): Theme {
+  try {
+    return localStorage.getItem('sanctuary-theme') === 'light' ? 'light' : 'dark';
+  } catch {
+    return 'dark';
+  }
+}
+
+function applyThemeToDocument(theme: Theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
 export const useStore = create<AppState>((set, get) => ({
   loading: true,
   library: null,
@@ -117,8 +141,21 @@ export const useStore = create<AppState>((set, get) => ({
   liveTextVisible: true,
   liveBackgroundVisible: true,
   outputStatuses: [],
+  theme: loadStoredTheme(),
+
+  toggleTheme: () => {
+    const next: Theme = get().theme === 'dark' ? 'light' : 'dark';
+    applyThemeToDocument(next);
+    try {
+      localStorage.setItem('sanctuary-theme', next);
+    } catch {
+      // localStorage unavailable — theme just won't persist across restarts.
+    }
+    set({ theme: next });
+  },
 
   load: async () => {
+    applyThemeToDocument(get().theme);
     const library = await window.api.library.get();
     let activePlaylistId = library.playlists[0]?.id ?? null;
     if (!activePlaylistId) {
@@ -308,6 +345,41 @@ export const useStore = create<AppState>((set, get) => ({
     set({ selection: { ...selection, subIndex: nextIndex } });
   },
 
+  stepLive: (direction) => {
+    const { liveItemId, liveSubIndex, library } = get();
+    const playlist = get().activePlaylist();
+    if (!liveItemId || !library || !playlist) return;
+    const items = playlist.items;
+    const idx = items.findIndex((i) => i.id === liveItemId);
+    const item = items[idx];
+    if (!item) return;
+
+    const count = getSubSlideCount(item, library);
+    const nextSub = liveSubIndex + direction;
+    if (nextSub >= 0 && nextSub < count) {
+      set({ liveSubIndex: nextSub, liveTextVisible: true, liveBackgroundVisible: true });
+      sendProgramState(get);
+      return;
+    }
+
+    const nextItem = items[idx + direction];
+    if (!nextItem) return;
+    const nextCount = getSubSlideCount(nextItem, library);
+    set({
+      liveItemId: nextItem.id,
+      liveSubIndex: direction > 0 ? 0 : nextCount - 1,
+      liveTextVisible: true,
+      liveBackgroundVisible: true,
+    });
+    sendProgramState(get);
+  },
+
+  setLiveSubIndex: (subIndex) => {
+    if (!get().liveItemId) return;
+    set({ liveSubIndex: subIndex, liveTextVisible: true, liveBackgroundVisible: true });
+    sendProgramState(get);
+  },
+
   goLive: async () => {
     const { selection } = get();
     if (!selection.itemId) return;
@@ -342,6 +414,13 @@ export const useStore = create<AppState>((set, get) => ({
 
   restoreBackground: async () => {
     set({ liveBackgroundVisible: true });
+    sendProgramState(get);
+  },
+
+  toggleBlack: async () => {
+    const { liveTextVisible, liveBackgroundVisible } = get();
+    const isBlack = !liveTextVisible && !liveBackgroundVisible;
+    set({ liveTextVisible: isBlack, liveBackgroundVisible: isBlack });
     sendProgramState(get);
   },
 

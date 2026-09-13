@@ -29,7 +29,7 @@ function createControlWindow() {
   controlWindow = new BrowserWindow({
     width: 1360,
     height: 860,
-    title: 'Church Presenter',
+    title: 'Sanctuary',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -69,7 +69,7 @@ function createOutputWindow(config: OutputConfig) {
     autoHideMenuBar: true,
     backgroundColor: config.role === 'stream' ? undefined : '#000000',
     transparent: config.role === 'stream',
-    title: `Church Presenter — ${config.name}`,
+    title: `Sanctuary — ${config.name}`,
     webPreferences: {
       preload: path.join(__dirname, 'outputPreload.js'),
       contextIsolation: true,

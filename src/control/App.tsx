@@ -1,12 +1,25 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from './store';
-import { SchedulePanel } from './components/SchedulePanel';
-import { SlideGridPanel } from './components/SlideGridPanel';
-import { LiveOutputPanel } from './components/LiveOutputPanel';
+import { TitleBar } from './components/TitleBar';
+import { TabRow, type ScreenTab } from './components/TabRow';
+import { StatusBar } from './components/StatusBar';
+import { LiveScreen } from './components/LiveScreen';
+import { ComingSoon } from './components/ComingSoon';
+
+const SCREEN_LABELS: Record<Exclude<ScreenTab, 'live'>, string> = {
+  home: 'Home',
+  songs: 'Songs',
+  bible: 'Bible',
+  media: 'Media',
+  themes: 'Themes',
+  stage: 'Stage',
+  settings: 'Settings',
+};
 
 export function App() {
   const loading = useStore((s) => s.loading);
   const load = useStore((s) => s.load);
+  const [tab, setTab] = useState<ScreenTab>('live');
 
   useEffect(() => {
     load();
@@ -18,14 +31,12 @@ export function App() {
 
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <h1>Church Presenter</h1>
-      </header>
-      <main className="app-body">
-        <SchedulePanel />
-        <SlideGridPanel />
-        <LiveOutputPanel />
-      </main>
+      <TitleBar />
+      <TabRow active={tab} onChange={setTab} />
+      <div className="app-screen">
+        {tab === 'live' ? <LiveScreen /> : <ComingSoon screen={SCREEN_LABELS[tab]} />}
+      </div>
+      <StatusBar />
     </div>
   );
 }
