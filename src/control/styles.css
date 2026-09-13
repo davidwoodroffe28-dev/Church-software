@@ -340,6 +340,11 @@ label {
   font-size: 9.5px;
   color: var(--ink3);
 }
+.service-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
 .type-stripe {
   width: 3px;

@@ -27,6 +27,8 @@ export function LiveScreen() {
   const clearText = useStore((s) => s.clearText);
   const restoreText = useStore((s) => s.restoreText);
   const toggleBlack = useStore((s) => s.toggleBlack);
+  const undoSchedule = useStore((s) => s.undoSchedule);
+  const redoSchedule = useStore((s) => s.redoSchedule);
 
   const previewItem = playlist?.items.find((i) => i.id === selection.itemId) ?? null;
   const liveItem = playlist?.items.find((i) => i.id === liveItemId) ?? null;
@@ -50,11 +52,18 @@ export function LiveScreen() {
         e.preventDefault();
         if (liveTextVisible) clearText();
         else restoreText();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        // Service edit undo/redo — Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z. Not part of DESIGN-SPEC.md §6's
+        // fixed shortcut list (that's the live-advance keys); this is a standard editor convention
+        // for the Service list specifically.
+        e.preventDefault();
+        if (e.shiftKey) redoSchedule();
+        else undoSchedule();
       }
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [stepLive, toggleBlack, clearText, restoreText, liveTextVisible]);
+  }, [stepLive, toggleBlack, clearText, restoreText, liveTextVisible, undoSchedule, redoSchedule]);
 
   return (
     <div className="live-screen">

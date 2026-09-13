@@ -10,6 +10,10 @@ export function ServiceColumn() {
   const reorderItem = useStore((s) => s.reorderItem);
   const liveItemId = useStore((s) => s.liveItemId);
   const goLive = useStore((s) => s.goLive);
+  const undoStack = useStore((s) => s.scheduleUndoStack);
+  const redoStack = useStore((s) => s.scheduleRedoStack);
+  const undoSchedule = useStore((s) => s.undoSchedule);
+  const redoSchedule = useStore((s) => s.redoSchedule);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<{ id: string; position: 'before' | 'after' } | null>(null);
 
@@ -19,7 +23,15 @@ export function ServiceColumn() {
     <div className="service-column">
       <div className="column-header">
         <span className="mono column-title">SERVICE</span>
-        <span className="mono column-count">{items.length} ITEM{items.length === 1 ? '' : 'S'}</span>
+        <div className="service-header-right">
+          <button className="row-icon-btn" onClick={undoSchedule} disabled={!undoStack.length} title="Undo (Ctrl+Z)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10h10a5 5 0 0 1 0 10h-2" /><polyline points="7 5 3 10 7 15" /></svg>
+          </button>
+          <button className="row-icon-btn" onClick={redoSchedule} disabled={!redoStack.length} title="Redo (Ctrl+Shift+Z)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10H11a5 5 0 0 0 0 10h2" /><polyline points="17 5 21 10 17 15" /></svg>
+          </button>
+          <span className="mono column-count">{items.length} ITEM{items.length === 1 ? '' : 'S'}</span>
+        </div>
       </div>
 
       <div

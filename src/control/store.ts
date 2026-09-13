@@ -40,6 +40,8 @@ interface AppState {
   activeScreen: ScreenTab;
   remoteStatus: RemoteStatus;
   remoteBusy: boolean;
+  scheduleUndoStack: PlaylistItem[][];
+  scheduleRedoStack: PlaylistItem[][];
 
   load: () => Promise<void>;
   toggleTheme: () => void;
@@ -77,6 +79,10 @@ interface AppState {
   moveItem: (itemId: string, direction: -1 | 1) => Promise<void>;
   /** targetId null = drop past the last item (append at the end). */
   reorderItem: (draggedId: string, targetId: string | null, position?: 'before' | 'after') => Promise<void>;
+  /** Undo/redo for Service edits (add/remove/reorder) — session-only, scoped to whichever playlist
+   *  is active when the undo/redo stacks are read (they're cleared on switching services). */
+  undoSchedule: () => Promise<void>;
+  redoSchedule: () => Promise<void>;
 
   // Selection / live
   select: (itemId: string, subIndex?: number) => void;
@@ -139,6 +145,18 @@ function applyThemeToDocument(theme: Theme) {
   document.documentElement.setAttribute('data-theme', theme);
 }
 
+const SCHEDULE_UNDO_LIMIT = 50;
+
+/** Captures the active playlist's current items onto the undo stack and clears redo — called at
+ *  the top of every Service-mutating action (add/remove/move/reorder), before it computes the new
+ *  items array, so the snapshot is always the state one step back from what's about to happen. */
+function snapshotScheduleForUndo(get: () => AppState, set: (partial: Partial<AppState>) => void) {
+  const playlist = get().activePlaylist();
+  if (!playlist) return;
+  const stack = [...get().scheduleUndoStack, playlist.items].slice(-SCHEDULE_UNDO_LIMIT);
+  set({ scheduleUndoStack: stack, scheduleRedoStack: [] });
+}
+
 export const useStore = create<AppState>((set, get) => ({
   loading: true,
   library: null,
@@ -155,10 +173,13 @@ export const useStore = create<AppState>((set, get) => ({
   activeScreen: 'home',
   remoteStatus: { running: false, url: null, qrDataUrl: null },
   remoteBusy: false,
+  scheduleUndoStack: [],
+  scheduleRedoStack: [],
 
   setActiveScreen: (screen) => set({ activeScreen: screen }),
 
-  setActivePlaylistId: (id) => set({ activePlaylistId: id, selection: { itemId: null, subIndex: 0 } }),
+  setActivePlaylistId: (id) =>
+    set({ activePlaylistId: id, selection: { itemId: null, subIndex: 0 }, scheduleUndoStack: [], scheduleRedoStack: [] }),
 
   createPlaylist: async (name) => {
     const library = get().library;
@@ -172,7 +193,13 @@ export const useStore = create<AppState>((set, get) => ({
     };
     const playlists = [...library.playlists, playlist];
     await window.api.library.savePlaylists(playlists);
-    set({ library: { ...library, playlists }, activePlaylistId: playlist.id, selection: { itemId: null, subIndex: 0 } });
+    set({
+      library: { ...library, playlists },
+      activePlaylistId: playlist.id,
+      selection: { itemId: null, subIndex: 0 },
+      scheduleUndoStack: [],
+      scheduleRedoStack: [],
+    });
   },
 
   toggleTheme: () => {
@@ -353,6 +380,7 @@ export const useStore = create<AppState>((set, get) => ({
     const library = get().library;
     const playlist = get().activePlaylist();
     if (!library || !playlist) return item;
+    snapshotScheduleForUndo(get, set);
     const playlists = library.playlists.map((p) =>
       p.id === playlist.id ? { ...p, items: [...p.items, item], updatedAt: Date.now() } : p
     );
@@ -365,6 +393,7 @@ export const useStore = create<AppState>((set, get) => ({
     const library = get().library;
     const playlist = get().activePlaylist();
     if (!library || !playlist) return;
+    snapshotScheduleForUndo(get, set);
     const playlists = library.playlists.map((p) =>
       p.id === playlist.id ? { ...p, items: p.items.filter((i) => i.id !== itemId), updatedAt: Date.now() } : p
     );
@@ -380,6 +409,7 @@ export const useStore = create<AppState>((set, get) => ({
     const idx = items.findIndex((i) => i.id === itemId);
     const swapWith = idx + direction;
     if (idx < 0 || swapWith < 0 || swapWith >= items.length) return;
+    snapshotScheduleForUndo(get, set);
     [items[idx], items[swapWith]] = [items[swapWith], items[idx]];
     const playlists = library.playlists.map((p) => (p.id === playlist.id ? { ...p, items, updatedAt: Date.now() } : p));
     await window.api.library.savePlaylists(playlists);
@@ -408,9 +438,38 @@ export const useStore = create<AppState>((set, get) => ({
     }
     items.splice(insertIdx, 0, moved);
 
+    snapshotScheduleForUndo(get, set);
     const playlists = library.playlists.map((p) => (p.id === playlist.id ? { ...p, items, updatedAt: Date.now() } : p));
     await window.api.library.savePlaylists(playlists);
     set({ library: { ...library, playlists } });
+  },
+
+  undoSchedule: async () => {
+    const { scheduleUndoStack, scheduleRedoStack, library } = get();
+    const playlist = get().activePlaylist();
+    const previous = scheduleUndoStack.at(-1);
+    if (!previous || !library || !playlist) return;
+    const playlists = library.playlists.map((p) => (p.id === playlist.id ? { ...p, items: previous, updatedAt: Date.now() } : p));
+    await window.api.library.savePlaylists(playlists);
+    set({
+      library: { ...library, playlists },
+      scheduleUndoStack: scheduleUndoStack.slice(0, -1),
+      scheduleRedoStack: [...scheduleRedoStack, playlist.items].slice(-SCHEDULE_UNDO_LIMIT),
+    });
+  },
+
+  redoSchedule: async () => {
+    const { scheduleUndoStack, scheduleRedoStack, library } = get();
+    const playlist = get().activePlaylist();
+    const next = scheduleRedoStack.at(-1);
+    if (!next || !library || !playlist) return;
+    const playlists = library.playlists.map((p) => (p.id === playlist.id ? { ...p, items: next, updatedAt: Date.now() } : p));
+    await window.api.library.savePlaylists(playlists);
+    set({
+      library: { ...library, playlists },
+      scheduleRedoStack: scheduleRedoStack.slice(0, -1),
+      scheduleUndoStack: [...scheduleUndoStack, playlist.items].slice(-SCHEDULE_UNDO_LIMIT),
+    });
   },
 
   select: (itemId, subIndex = 0) => set({ selection: { itemId, subIndex } }),
