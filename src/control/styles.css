@@ -1050,3 +1050,126 @@ label {
   white-space: nowrap;
   width: 1%;
 }
+
+/* ---------- Songs screen ---------- */
+
+.songs-screen {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 306px 1fr 320px;
+  min-height: 0;
+  width: 100%;
+}
+.songs-list-column {
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-height: 0;
+}
+.songs-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.songs-row-active {
+  background: var(--panel2);
+  outline: 1px solid var(--accent);
+}
+
+.song-editor-column {
+  border-right: 1px solid var(--line);
+  padding: var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-height: 0;
+  overflow-y: auto;
+}
+.song-title-field {
+  font-size: 22px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  padding: 4px 0;
+}
+.song-title-field:focus-visible {
+  outline: none;
+  border-bottom: 1px solid var(--accent);
+}
+.song-author-field {
+  border: none;
+  background: transparent;
+  padding: 2px 0;
+  color: var(--ink2);
+  font-size: 13px;
+}
+.song-author-field:focus-visible {
+  outline: none;
+  border-bottom: 1px solid var(--line);
+}
+
+.sections-arrangement {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.arrangement-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-control);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.arrangement-row:hover {
+  background: var(--hover);
+}
+.arrangement-row-active {
+  background: var(--panel2);
+  border-color: var(--accent);
+}
+.arrangement-index {
+  font-size: 10.5px;
+  color: var(--ink3);
+  width: 16px;
+  flex-shrink: 0;
+}
+.arrangement-label {
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.section-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--line);
+}
+.section-label-field {
+  font-weight: 500;
+}
+.section-text-field {
+  min-height: 220px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.songs-live-column {
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+.songs-monitor {
+  flex-shrink: 0;
+}
