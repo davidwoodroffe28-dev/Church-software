@@ -21,6 +21,8 @@ interface Selection {
 
 type Theme = 'dark' | 'light';
 
+export type ScreenTab = 'home' | 'live' | 'songs' | 'bible' | 'media' | 'themes' | 'stage' | 'settings';
+
 interface AppState {
   loading: boolean;
   library: LibraryData | null;
@@ -34,9 +36,13 @@ interface AppState {
   liveBackgroundVisible: boolean;
   outputStatuses: OutputStatus[];
   theme: Theme;
+  activeScreen: ScreenTab;
 
   load: () => Promise<void>;
   toggleTheme: () => void;
+  setActiveScreen: (screen: ScreenTab) => void;
+  setActivePlaylistId: (id: string) => void;
+  createPlaylist: (name: string) => Promise<void>;
 
   // Songs
   upsertSong: (song: Song) => Promise<void>;
@@ -131,6 +137,26 @@ export const useStore = create<AppState>((set, get) => ({
   liveBackgroundVisible: true,
   outputStatuses: [],
   theme: loadStoredTheme(),
+  activeScreen: 'home',
+
+  setActiveScreen: (screen) => set({ activeScreen: screen }),
+
+  setActivePlaylistId: (id) => set({ activePlaylistId: id, selection: { itemId: null, subIndex: 0 } }),
+
+  createPlaylist: async (name) => {
+    const library = get().library;
+    if (!library) return;
+    const playlist: Playlist = {
+      id: uuid(),
+      name: name.trim() || 'Untitled Service',
+      items: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    const playlists = [...library.playlists, playlist];
+    await window.api.library.savePlaylists(playlists);
+    set({ library: { ...library, playlists }, activePlaylistId: playlist.id, selection: { itemId: null, subIndex: 0 } });
+  },
 
   toggleTheme: () => {
     const next: Theme = get().theme === 'dark' ? 'light' : 'dark';

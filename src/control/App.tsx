@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useStore } from './store';
+import type { ScreenTab } from './store';
 import { TitleBar } from './components/TitleBar';
-import { TabRow, type ScreenTab } from './components/TabRow';
+import { TabRow } from './components/TabRow';
 import { StatusBar } from './components/StatusBar';
+import { HomeScreen } from './components/HomeScreen';
 import { LiveScreen } from './components/LiveScreen';
 import { StageScreen } from './components/StageScreen';
 import { ComingSoon } from './components/ComingSoon';
 
-const SCREEN_LABELS: Record<Exclude<ScreenTab, 'live' | 'stage'>, string> = {
-  home: 'Home',
+const SCREEN_LABELS: Record<Exclude<ScreenTab, 'live' | 'stage' | 'home'>, string> = {
   songs: 'Songs',
   bible: 'Bible',
   media: 'Media',
@@ -19,7 +20,8 @@ const SCREEN_LABELS: Record<Exclude<ScreenTab, 'live' | 'stage'>, string> = {
 export function App() {
   const loading = useStore((s) => s.loading);
   const load = useStore((s) => s.load);
-  const [tab, setTab] = useState<ScreenTab>('live');
+  const tab = useStore((s) => s.activeScreen);
+  const setTab = useStore((s) => s.setActiveScreen);
 
   useEffect(() => {
     load();
@@ -34,7 +36,9 @@ export function App() {
       <TitleBar />
       <TabRow active={tab} onChange={setTab} />
       <div className="app-screen">
-        {tab === 'live' ? (
+        {tab === 'home' ? (
+          <HomeScreen />
+        ) : tab === 'live' ? (
           <LiveScreen />
         ) : tab === 'stage' ? (
           <StageScreen />

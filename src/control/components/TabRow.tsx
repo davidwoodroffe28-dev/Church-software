@@ -1,4 +1,4 @@
-export type ScreenTab = 'home' | 'live' | 'songs' | 'bible' | 'media' | 'themes' | 'stage' | 'settings';
+import type { ScreenTab } from '../store';
 
 const TABS: { id: ScreenTab; label: string }[] = [
   { id: 'home', label: 'Home' },

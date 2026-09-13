@@ -931,3 +931,122 @@ label {
   width: 54px;
   text-align: center;
 }
+
+/* ---------- Home screen ---------- */
+
+.home-screen {
+  flex: 1;
+  padding: var(--sp-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+  overflow-y: auto;
+  max-width: 900px;
+}
+.home-greeting {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.continue-card {
+  position: relative;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--sp-6) var(--sp-7);
+  box-shadow: var(--shadow-raised);
+  transition: border-color 140ms ease, transform 140ms ease;
+}
+.continue-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  background: var(--panel);
+}
+.continue-card-label {
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+.continue-card-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.continue-card-meta {
+  font-size: 13px;
+  color: var(--ink2);
+}
+.continue-card-arrow {
+  position: absolute;
+  right: var(--sp-7);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 24px;
+  color: var(--ink3);
+}
+
+.home-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-4);
+}
+.action-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--sp-5);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+  transition: border-color 140ms ease, transform 140ms ease;
+}
+.action-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  background: var(--panel);
+}
+.action-card-icon {
+  display: flex;
+  color: var(--accent);
+}
+
+.recent-schedules {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.recent-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.recent-table tr {
+  cursor: pointer;
+}
+.recent-table tr:hover td {
+  background: var(--hover);
+}
+.recent-table td {
+  padding: var(--sp-3) var(--sp-2);
+  border-bottom: 1px solid var(--line);
+}
+.recent-table-name {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.recent-table-meta {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink3);
+  white-space: nowrap;
+  width: 1%;
+}
