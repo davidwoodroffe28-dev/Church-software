@@ -284,9 +284,16 @@ label {
   border-top: 1px solid var(--line);
 }
 .status-bar-live {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
   font-size: 9.5px;
   letter-spacing: 0.08em;
   color: var(--ink2);
+}
+.status-bar-live-active {
+  color: var(--live);
+  font-weight: 600;
 }
 .status-bar-right {
   display: flex;
@@ -360,13 +367,22 @@ label {
   background: var(--live);
   box-shadow: 0 0 6px var(--live);
   flex-shrink: 0;
+  animation: live-pulse 1.8s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--live); }
+  50% { opacity: 0.55; box-shadow: 0 0 2px var(--live); }
 }
 
 .empty-hint {
-  padding: var(--sp-3) var(--sp-2);
+  margin: var(--sp-3) 0;
+  padding: var(--sp-6) var(--sp-4);
   color: var(--ink3);
   font-size: 13px;
   line-height: 1.5;
+  text-align: center;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-control);
 }
 
 /* ---------- library column ---------- */

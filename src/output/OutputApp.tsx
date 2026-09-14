@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { OutputRole, ProgramState } from '@shared/types';
-import { SlideView } from '../shared-ui/SlideView';
+import { CrossfadeSlideView } from '../shared-ui/CrossfadeSlideView';
 
 function useQueryParams() {
   const params = new URLSearchParams(window.location.search);
@@ -44,7 +44,7 @@ export function OutputApp() {
         }}
       >
         <div style={{ flex: 1, minHeight: 0 }}>
-          <SlideView
+          <CrossfadeSlideView
             slide={state.current}
             mode="stage"
             textVisible={state.textVisible}
@@ -74,7 +74,7 @@ export function OutputApp() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
-      <SlideView
+      <CrossfadeSlideView
         slide={state.current}
         mode={mode}
         chromaKey={chroma}

@@ -13,7 +13,8 @@ export function StatusBar() {
 
   return (
     <div className="status-bar">
-      <span className="status-bar-live mono">
+      <span className={'status-bar-live mono' + (liveItem ? ' status-bar-live-active' : '')}>
+        {liveItem && <span className="live-dot" />}
         {liveItem && liveSlide?.label ? `${liveSlide.label} · On Air` : 'Nothing on air'}
       </span>
       <div className="status-bar-right mono">
@@ -25,7 +26,7 @@ export function StatusBar() {
             </span>
           );
         })}
-        <span className="status-hints">← → ADVANCE · B BLACK · ESC CLEAR</span>
+        <span className="status-hints">← → ADVANCE · SPACE GO LIVE · B BLACK · ESC CLEAR</span>
       </div>
     </div>
   );

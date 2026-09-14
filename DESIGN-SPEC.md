@@ -188,7 +188,9 @@ changes what the room sees or previews it) stays exactly as strict as before: co
 1px lifts only, 140ms, nothing sliding, fading, or bouncing — the operator's eye must stay on the
 lyric.
 
-**Keyboard:** `← →` advance live · `B` black · `Esc` clear. Suppressed while typing.
+**Keyboard:** `← →` advance live · `↑ ↓` step the staged Preview item · `Space` send Preview to
+Live · `B` black · `Esc` clear · `/` focus library search. Suppressed while typing or while a
+button/link has focus.
 Every keyboard action has a visible button; the shortcuts are shown in the status bar.
 
 ---

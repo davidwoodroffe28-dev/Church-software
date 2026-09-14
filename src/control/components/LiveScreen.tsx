@@ -4,10 +4,13 @@ import { LibraryColumn } from './LibraryColumn';
 import { ServiceColumn } from './ServiceColumn';
 import { SlidePane } from './SlidePane';
 
-function isTypingTarget(el: EventTarget | null): boolean {
+// Excludes focused buttons/links too, not just text inputs — otherwise Space/Enter here would fire
+// alongside (or instead of) the native activation of whatever control currently has focus, e.g.
+// double-firing "send to live" when the user meant to press a focused delete button.
+function isInteractiveTarget(el: EventTarget | null): boolean {
   if (!(el instanceof HTMLElement)) return false;
   const tag = el.tagName;
-  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON' || tag === 'A' || el.isContentEditable;
 }
 
 export function LiveScreen() {
@@ -35,16 +38,32 @@ export function LiveScreen() {
   const isBlack = !liveTextVisible && !liveBackgroundVisible;
   const isTextCleared = !liveTextVisible;
 
-  // DESIGN-SPEC.md §6: ← → advance live, B black, Esc clear — suppressed while typing.
+  // DESIGN-SPEC.md §6: ← → advance live, ↑ ↓ step preview, Space send to live, B black, Esc clear,
+  // / focus search — suppressed while typing or while a button/link already has focus.
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (isTypingTarget(e.target)) return;
+      if (isInteractiveTarget(e.target)) return;
       if (e.key === 'ArrowRight') {
         e.preventDefault();
         stepLive(1);
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         stepLive(-1);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        stepSubSlide(1);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        stepSubSlide(-1);
+      } else if (e.key === ' ') {
+        // A staged Preview item is the common case operators advance through mid-service; once
+        // nothing's staged, Space instead re-sends the current live sub-slide — a harmless no-op
+        // that at least never does nothing at all when pressed out of habit.
+        e.preventDefault();
+        if (previewItem) goLive();
+      } else if (e.key === '/') {
+        e.preventDefault();
+        document.querySelector<HTMLInputElement>('.library-search')?.focus();
       } else if (e.key.toLowerCase() === 'b') {
         e.preventDefault();
         toggleBlack();
@@ -63,7 +82,7 @@ export function LiveScreen() {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [stepLive, toggleBlack, clearText, restoreText, liveTextVisible, undoSchedule, redoSchedule]);
+  }, [stepLive, stepSubSlide, goLive, previewItem, toggleBlack, clearText, restoreText, liveTextVisible, undoSchedule, redoSchedule]);
 
   return (
     <div className="live-screen">
