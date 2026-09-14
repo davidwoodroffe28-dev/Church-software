@@ -136,6 +136,10 @@ export function getNextSlide(
  *  third happens to be live, without needing to be attached to that item or its theme first. */
 export function applyBackgroundOverride(slide: LiveSlide, override: Background | null): LiveSlide {
   if (!override) return slide;
-  if (slide.kind !== 'song' && slide.kind !== 'verse' && slide.kind !== 'lowerThird') return slide;
+  // Blank counts too — with nothing staged/live yet, a picked background should still show up as
+  // an ambient backdrop rather than silently doing nothing until some text happens to go live.
+  if (slide.kind !== 'song' && slide.kind !== 'verse' && slide.kind !== 'lowerThird' && slide.kind !== 'blank') {
+    return slide;
+  }
   return { ...slide, background: override };
 }

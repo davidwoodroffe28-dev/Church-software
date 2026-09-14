@@ -106,11 +106,16 @@ function FullFrameContent({ slide, onPresentationPageCount }: Pick<Props, 'slide
 function TextSlide({
   slide,
   asLowerThird,
+  showBackgroundMedia,
   textVisible = true,
   backgroundVisible = true,
 }: {
   slide: LiveSlide;
   asLowerThird: boolean;
+  /** False on the Stage confidence monitor — README documents Stage as "current text (no
+   *  background video)" so performers get a clean, non-distracting view regardless of what
+   *  Program is showing behind the lyrics. */
+  showBackgroundMedia: boolean;
   textVisible?: boolean;
   backgroundVisible?: boolean;
 }) {
@@ -159,7 +164,7 @@ function TextSlide({
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', containerType: 'size' }}>
-      {backgroundVisible ? (
+      {backgroundVisible && showBackgroundMedia ? (
         <BackgroundLayer background={slide.background} />
       ) : (
         <div style={{ position: 'absolute', inset: 0, background: '#000000' }} />
@@ -241,13 +246,20 @@ export function SlideView({
     // program feed instead, so this output stays keyed-out/blank for it.
     return (
       <div style={{ width: '100%', height: '100%', background: chromaKey }}>
-        {isTextKind && <TextSlide slide={slide} asLowerThird textVisible={textVisible} />}
+        {isTextKind && <TextSlide slide={slide} asLowerThird showBackgroundMedia={false} textVisible={textVisible} />}
       </div>
     );
   }
 
   if (slide.kind === 'blank') {
-    return <div style={{ width: '100%', height: '100%', background: '#000000' }} />;
+    // A blank slide can still carry a background (applyBackgroundOverride sets one when nothing's
+    // staged/live yet) — render it so an ambient background shows up even with no text on air.
+    // Suppressed on Stage same as everywhere else: no background video on the confidence monitor.
+    return (
+      <div style={{ width: '100%', height: '100%', background: '#000000', position: 'relative' }}>
+        {backgroundVisible && mode !== 'stage' && slide.background && <BackgroundLayer background={slide.background} />}
+      </div>
+    );
   }
 
   if (slide.kind === 'countdown') {
@@ -268,6 +280,7 @@ export function SlideView({
     <TextSlide
       slide={slide}
       asLowerThird={mode === 'full' && !!slide.template?.lowerThird}
+      showBackgroundMedia={mode !== 'stage'}
       textVisible={textVisible}
       backgroundVisible={backgroundVisible}
     />
