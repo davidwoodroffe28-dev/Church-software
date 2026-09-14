@@ -124,6 +124,7 @@ const defaults: LibraryData = {
   presentations: [],
   outputConfigs: defaultOutputConfigs,
   logoMediaId: null,
+  streamPreviewSource: null,
 };
 
 export const store = new Store<LibraryData>({
@@ -142,5 +143,6 @@ export function getLibrary(): LibraryData {
     presentations: store.get('presentations'),
     outputConfigs: store.get('outputConfigs'),
     logoMediaId: store.get('logoMediaId', null),
+    streamPreviewSource: store.get('streamPreviewSource', null),
   };
 }

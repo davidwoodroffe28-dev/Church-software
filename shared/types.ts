@@ -200,6 +200,9 @@ export interface OutputConfig {
   /** Chroma-key background color used by the 'stream' role so it can be keyed out in OBS/vMix. */
   chromaKey: string;
   enabled: boolean;
+  /** 'stream' role only: also broadcast this output's rendered frames as an NDI source on the
+   *  local network, as an alternative to a physical HDMI output or OBS/vMix Window Capture. */
+  ndiEnabled?: boolean;
 }
 
 export interface LibraryData {
@@ -211,4 +214,8 @@ export interface LibraryData {
   outputConfigs: OutputConfig[];
   /** MediaItem id used for the Live screen's "Logo" toggle (Settings → Appearance) — null until set. */
   logoMediaId: string | null;
+  /** YouTube URL/channel-ID for the Stream Preview panel (Settings → Stream) — null until set.
+   *  Either a specific video/live URL, or a bare/URL channel id (starts "UC…") to always show
+   *  whatever that channel currently has live, so it doesn't need updating week to week. */
+  streamPreviewSource: string | null;
 }

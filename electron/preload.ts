@@ -12,6 +12,7 @@ const api: ControlApi = {
     savePresentations: (presentations) => ipcRenderer.invoke(Channels.SavePresentations, presentations),
     saveOutputConfigs: (configs) => ipcRenderer.invoke(Channels.SaveOutputConfigs, configs),
     saveLogoMediaId: (mediaId) => ipcRenderer.invoke(Channels.SaveLogoMediaId, mediaId),
+    saveStreamPreviewSource: (source) => ipcRenderer.invoke(Channels.SaveStreamPreviewSource, source),
   },
   dialogs: {
     pickMediaFiles: () => ipcRenderer.invoke(Channels.PickMediaFiles),

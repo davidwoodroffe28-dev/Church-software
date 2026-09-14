@@ -8,6 +8,8 @@ import { importSongFile, importSongsFromFolder } from './songImport';
 import { importEasyWorshipDatabase } from './easyworshipImport';
 import { TRANSLATIONS, getBooks, getChapterCount, getChapterVerses, searchVerses } from './bible';
 import { startRemoteServer, stopRemoteServer, getRemoteStatusWithQr, updateRemoteState, updateRemoteQueue, type RemoteActionType } from './remoteServer';
+import { startStreamEmbedServer } from './streamEmbedServer';
+import { startNdiSender, stopNdiSender } from './ndiSender';
 import type { RemoteQueueItem } from '@shared/api';
 import { probeVideoStreams, needsTranscode, transcodeToH264 } from './mediaTranscode';
 import type { MediaItem, OutputConfig, ProgramState } from '@shared/types';
@@ -152,11 +154,26 @@ function syncOutputWindows() {
     }
   }
   notifyOutputStatus();
+  void syncNdiSender();
+}
+
+/** Starts/stops the NDI sender to track the 'stream' output's own enabled/ndiEnabled flags and the
+ *  existence of its window — called after every syncOutputWindows so it always reflects current
+ *  settings, whether they changed via Settings → Outputs or the output window itself just closed. */
+function syncNdiSender() {
+  const configs = store.get('outputConfigs');
+  const streamConfig = configs.find((c) => c.role === 'stream');
+  const win = streamConfig ? outputWindows.get(streamConfig.id) : undefined;
+  if (streamConfig?.enabled && streamConfig.ndiEnabled && win) {
+    return startNdiSender(win, `Sanctuary — ${streamConfig.name}`);
+  }
+  return stopNdiSender();
 }
 
 app.whenReady().then(() => {
   createControlWindow();
   syncOutputWindows();
+  startStreamEmbedServer();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -168,6 +185,10 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('before-quit', () => {
+  void stopNdiSender();
 });
 
 // ---- IPC handlers ----
@@ -201,6 +222,10 @@ ipcMain.handle(Channels.SaveOutputConfigs, (_e, outputConfigs: OutputConfig[]) =
 });
 ipcMain.handle(Channels.SaveLogoMediaId, (_e, logoMediaId: string | null) => {
   store.set('logoMediaId', logoMediaId);
+  return true;
+});
+ipcMain.handle(Channels.SaveStreamPreviewSource, (_e, source: string | null) => {
+  store.set('streamPreviewSource', source);
   return true;
 });
 

@@ -3,6 +3,7 @@ import { useStore } from './store';
 import { TitleBar } from './components/TitleBar';
 import { TabRow } from './components/TabRow';
 import { StatusBar } from './components/StatusBar';
+import { StreamPreview } from './components/StreamPreview';
 import { HomeScreen } from './components/HomeScreen';
 import { LiveScreen } from './components/LiveScreen';
 import { StageScreen } from './components/StageScreen';
@@ -56,6 +57,7 @@ export function App() {
         )}
       </div>
       <StatusBar />
+      <StreamPreview />
     </div>
   );
 }

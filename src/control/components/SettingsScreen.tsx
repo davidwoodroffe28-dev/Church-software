@@ -2,14 +2,16 @@ import { useEffect, useState } from 'react';
 import type { OutputConfig } from '@shared/types';
 import type { DisplayInfo } from '@shared/api';
 import { useStore } from '../store';
+import { toYouTubeEmbedSrc } from '../youtubeEmbed';
 import { Toggle } from './Toggle';
 
-type Category = 'outputs' | 'appearance' | 'remote';
+type Category = 'outputs' | 'appearance' | 'remote' | 'stream';
 
 const ROLE_HELP: Record<OutputConfig['role'], string> = {
   program: 'The main audience/projector feed — background plus text, or full-frame media and slides.',
   stage: 'A confidence monitor for performers and speakers: current text, an up-next preview, and a clock.',
-  stream: 'A chroma-key lower-thirds overlay for OBS/vMix Window Capture during a livestream.',
+  stream:
+    'A chroma-key lower-thirds overlay for a hardware switcher (HDMI) or OBS/vMix Window Capture — or enable NDI below to send it over the network instead, no capture card or window capture needed.',
 };
 
 export function SettingsScreen() {
@@ -30,10 +32,21 @@ export function SettingsScreen() {
         <button className={'settings-category' + (category === 'appearance' ? ' settings-category-active' : '')} onClick={() => setCategory('appearance')}>
           Appearance
         </button>
+        <button className={'settings-category' + (category === 'stream' ? ' settings-category-active' : '')} onClick={() => setCategory('stream')}>
+          Stream
+        </button>
       </div>
 
       <div className="settings-content-column">
-        {category === 'outputs' ? <OutputsSettingsPanel /> : category === 'remote' ? <RemoteSettingsPanel /> : <AppearanceSettingsPanel />}
+        {category === 'outputs' ? (
+          <OutputsSettingsPanel />
+        ) : category === 'remote' ? (
+          <RemoteSettingsPanel />
+        ) : category === 'stream' ? (
+          <StreamSettingsPanel />
+        ) : (
+          <AppearanceSettingsPanel />
+        )}
       </div>
     </div>
   );
@@ -80,7 +93,15 @@ function OutputsSettingsPanel() {
               ))}
             </select>
             {c.role === 'stream' && (
-              <input type="color" value={c.chromaKey} onChange={(e) => update(c.id, { chromaKey: e.target.value })} disabled={!c.enabled} />
+              <>
+                <input type="color" value={c.chromaKey} onChange={(e) => update(c.id, { chromaKey: e.target.value })} disabled={!c.enabled} />
+                <Toggle
+                  checked={!!c.ndiEnabled}
+                  onChange={(v) => update(c.id, { ndiEnabled: v })}
+                  label="NDI"
+                  disabled={!c.enabled}
+                />
+              </>
             )}
           </div>
         </div>
@@ -165,6 +186,54 @@ function AppearanceSettingsPanel() {
           </select>
         </div>
       </div>
+    </div>
+  );
+}
+
+function StreamSettingsPanel() {
+  const library = useStore((s) => s.library);
+  const setStreamPreviewSource = useStore((s) => s.setStreamPreviewSource);
+  const [draft, setDraft] = useState(library?.streamPreviewSource ?? '');
+
+  const parsed = draft.trim() ? toYouTubeEmbedSrc(draft) : null;
+  const isDirty = draft.trim() !== (library?.streamPreviewSource ?? '').trim();
+
+  return (
+    <div className="settings-panel">
+      <div className="screen-title">Stream preview</div>
+      <div className="settings-row">
+        <div className="settings-row-main">
+          <div className="settings-row-text">
+            <div className="settings-row-label">YouTube video or channel link</div>
+            <div className="hint">
+              Paste a specific stream's link (youtube.com/watch?v=…, youtu.be/…) to watch that one, or your
+              channel's link (youtube.com/channel/UC…) to always show whatever's live on that channel — set once,
+              works every week. Shown in the floating Stream panel (bottom status bar) so whoever's running slides
+              can see lower thirds on the real feed. Handle links (youtube.com/@yourname) aren't supported yet —
+              use the /channel/UC… link instead.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="settings-row">
+        <div className="settings-row-controls" style={{ width: '100%' }}>
+          <input
+            type="text"
+            style={{ flex: 1 }}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="https://www.youtube.com/channel/UC…"
+          />
+          <button
+            className="toggle-btn"
+            disabled={!isDirty || (!!draft.trim() && !parsed)}
+            onClick={() => setStreamPreviewSource(draft.trim() || null)}
+          >
+            Save
+          </button>
+        </div>
+      </div>
+      {draft.trim() && !parsed && <div className="hint stream-source-error">Not recognized as a YouTube video or channel link.</div>}
     </div>
   );
 }

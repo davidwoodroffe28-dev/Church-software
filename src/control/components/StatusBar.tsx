@@ -7,6 +7,9 @@ export function StatusBar() {
   const liveItemId = useStore((s) => s.liveItemId);
   const liveSubIndex = useStore((s) => s.liveSubIndex);
   const outputStatuses = useStore((s) => s.outputStatuses);
+  const streamPreviewOpen = useStore((s) => s.streamPreviewOpen);
+  const toggleStreamPreview = useStore((s) => s.toggleStreamPreview);
+  const hasStreamSource = !!library?.streamPreviewSource;
 
   const liveItem = playlist?.items.find((i) => i.id === liveItemId) ?? null;
   const liveSlide = liveItem && library ? buildLiveSlide(liveItem, liveSubIndex, library) : null;
@@ -26,6 +29,19 @@ export function StatusBar() {
             </span>
           );
         })}
+        <button
+          className={'status-stream-btn mono' + (streamPreviewOpen ? ' status-stream-btn-active' : '')}
+          onClick={toggleStreamPreview}
+          disabled={!hasStreamSource}
+          title={hasStreamSource ? 'Show/hide the livestream preview' : 'Set a stream source first — Settings → Stream'}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="5" width="20" height="14" rx="2.5" />
+            <path d="M8 21h8" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+          Stream preview {streamPreviewOpen ? '▾' : '▸'}
+        </button>
         <span className="status-hints">← → ADVANCE · SPACE GO LIVE · B BLACK · ESC CLEAR</span>
       </div>
     </div>

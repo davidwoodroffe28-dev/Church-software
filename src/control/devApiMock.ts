@@ -72,6 +72,7 @@ const library: LibraryData = {
   presentations: [],
   templates,
   logoMediaId: null,
+  streamPreviewSource: null,
   outputConfigs: [
     { id: 'program-1', role: 'program', name: 'Program (Audience)', displayId: null, chromaKey: '#00ff00', enabled: true },
     { id: 'stage-1', role: 'stage', name: 'Stage Display', displayId: null, chromaKey: '#00ff00', enabled: true },
@@ -125,6 +126,7 @@ export function installDevApiMock() {
       savePresentations: async () => true,
       saveOutputConfigs: async () => true,
       saveLogoMediaId: async () => true,
+      saveStreamPreviewSource: async () => true,
     },
     dialogs: {
       pickMediaFiles: async () => ({ items: [], warnings: [] }),

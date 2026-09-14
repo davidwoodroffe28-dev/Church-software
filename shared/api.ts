@@ -69,6 +69,7 @@ export interface ControlApi {
     savePresentations: (presentations: Presentation[]) => Promise<boolean>;
     saveOutputConfigs: (configs: OutputConfig[]) => Promise<boolean>;
     saveLogoMediaId: (mediaId: string | null) => Promise<boolean>;
+    saveStreamPreviewSource: (source: string | null) => Promise<boolean>;
   };
   dialogs: {
     pickMediaFiles: () => Promise<{ items: MediaItem[]; warnings: string[] }>;

@@ -50,6 +50,9 @@ interface AppState {
   /** Live screen's "Logo" toggle — shows library.logoMediaId full-screen on Program instead of
    *  whatever's live, until dismissed (explicitly, or automatically by advancing/going live). */
   logoActive: boolean;
+  /** Whether the floating Stream Preview panel (see StreamPreview.tsx) is open — session-only,
+   *  not persisted, so it doesn't reappear already-open next launch. */
+  streamPreviewOpen: boolean;
 
   load: () => Promise<void>;
   toggleTheme: () => void;
@@ -145,6 +148,11 @@ interface AppState {
   // Live screen "Logo" toggle
   toggleLogo: () => void;
   setLogoMedia: (mediaId: string | null) => Promise<void>;
+
+  // Stream Preview panel — lets the operator see the actual livestream (lower thirds included)
+  // without leaving the app. Unlike Logo/backgroundOverride this never touches program output.
+  toggleStreamPreview: () => void;
+  setStreamPreviewSource: (source: string | null) => Promise<void>;
 }
 
 /** The single source of truth for "what does the room actually see right now," reused by the real
@@ -316,6 +324,7 @@ export const useStore = create<AppState>((set, get) => ({
   countdown: { durationSec: 300, remainingSec: 300, running: false, endAt: null, showOnProgram: false },
   backgroundOverride: null,
   logoActive: false,
+  streamPreviewOpen: false,
 
   setActiveScreen: (screen) => set({ activeScreen: screen }),
 
@@ -875,6 +884,15 @@ export const useStore = create<AppState>((set, get) => ({
     if (!library) return;
     await window.api.library.saveLogoMediaId(mediaId);
     set({ library: { ...library, logoMediaId: mediaId } });
+  },
+
+  toggleStreamPreview: () => set({ streamPreviewOpen: !get().streamPreviewOpen }),
+
+  setStreamPreviewSource: async (source) => {
+    const library = get().library;
+    if (!library) return;
+    await window.api.library.saveStreamPreviewSource(source);
+    set({ library: { ...library, streamPreviewSource: source } });
   },
 }));
 

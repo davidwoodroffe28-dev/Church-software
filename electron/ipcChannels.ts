@@ -9,6 +9,7 @@ export const Channels = {
   SavePresentations: 'library:savePresentations',
   SaveOutputConfigs: 'library:saveOutputConfigs',
   SaveLogoMediaId: 'library:saveLogoMediaId',
+  SaveStreamPreviewSource: 'library:saveStreamPreviewSource',
 
   // File dialogs
   PickMediaFiles: 'dialog:pickMediaFiles',

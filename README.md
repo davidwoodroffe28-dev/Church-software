@@ -113,13 +113,27 @@ For a hardware switcher (ATEM, etc.) instead of OBS/vMix: assign the Stream outp
 display connected to the switcher's HDMI input, set its chroma key, and key it out on the switcher —
 no in-app streaming/encoding involved, this app only ever produces the graphics layer.
 
-Configure outputs from **Settings → Outputs** (display assignment, chroma key color, enable/disable
+Alternatively, enable **NDI** on the Stream output (Settings → Outputs) to broadcast it as a named
+NDI source on the local network — no capture card, physical HDMI output, or OBS/vMix Window Capture
+required. Works with OBS (via its NDI plugin) or an ATEM switcher (via ATEM Software Control's NDI
+input support, added in late 2023 — check your unit's firmware/software version). Windows only, and
+adds real CPU cost (continuous screen capture of the output window at 25fps) — leave it off if you're
+not using it.
+
+Configure outputs from **Settings → Outputs** (display assignment, chroma key color, NDI, enable/disable
 per role).
 
 - **Mobile remote control** — a Wi-Fi-only local web page (Settings → Remote Control, connect by
   scanning the shown QR code) lets a phone or tablet advance/back, Black, and Clear without touching
   the booth laptop. Runs a small local HTTP+SSE server on the machine only; nothing goes over the
   internet, and a random per-session token gates every request.
+
+- **Stream preview** — a floating panel (toggle from the bottom status bar once a source is set in
+  Settings → Stream) embeds your actual public livestream, so whoever's running slides can confirm
+  the lower thirds look right on the real feed without a second screen. Currently YouTube only (a
+  video link, or a channel link to always follow whatever's live). Routed through a tiny loopback-only
+  wrapper page (see `electron/streamEmbedServer.ts`) because YouTube's embed player refuses to load
+  from this window's own `file://` origin otherwise.
 
 ## Bible data license
 
@@ -139,6 +153,11 @@ particular has its own attribution/usage terms) before distributing this app com
 - **LibreOffice** — an optional, separately-installed external program (not bundled) invoked the
   same way (`soffice --headless`) for pixel-accurate PowerPoint conversion. See **PowerPoint
   import** above.
+- **NDI SDK** — bundled via `grandi`/`@grandi/win32-x64` for the optional NDI output on the Stream
+  role (see **Multiple simultaneous outputs** above). Unlike FFmpeg/LibreOffice, this is a compiled
+  native Node addon linked directly into the app (not a standalone external process), under Vizrt/
+  NewTek's own NDI SDK license (https://ndi.link/ndisdk_license) — a separate license from every
+  other dependency here, and one to review before distributing this app commercially.
 
 ## Known limitations / possible follow-ups
 

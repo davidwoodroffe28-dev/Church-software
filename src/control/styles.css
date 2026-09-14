@@ -1750,3 +1750,95 @@ label {
   color: var(--ink);
   word-break: break-all;
 }
+.stream-source-error {
+  color: var(--live);
+}
+
+/* ---------- stream preview (status bar toggle + floating panel) ---------- */
+
+.status-stream-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px var(--sp-3);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--on-accent);
+  background: var(--accent);
+  border: 1px solid transparent;
+  border-radius: var(--radius-chip);
+  box-shadow: var(--shadow-control);
+}
+.status-stream-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.status-stream-btn:disabled {
+  color: var(--ink3);
+  background: transparent;
+  border-color: var(--line);
+  box-shadow: none;
+}
+.status-stream-btn-active {
+  background: var(--panel2);
+  color: var(--ink);
+  border-color: var(--accent);
+  box-shadow: var(--glow-accent);
+}
+
+.stream-preview {
+  position: fixed;
+  right: var(--sp-5);
+  bottom: 44px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-raised);
+  overflow: hidden;
+  z-index: 20;
+}
+.stream-preview-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 19;
+}
+.stream-preview-expanded {
+  right: 50%;
+  bottom: 50%;
+  transform: translate(50%, 50%);
+  width: min(90vw, 1180px);
+  z-index: 21;
+}
+.stream-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--line);
+}
+.stream-preview-title {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--ink2);
+}
+.stream-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stream-preview-frame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: none;
+  background: var(--screen);
+}
+.stream-preview-empty {
+  padding: var(--sp-5);
+  font-size: 12.5px;
+  color: var(--ink3);
+  text-align: center;
+}
