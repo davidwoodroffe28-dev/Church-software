@@ -101,6 +101,10 @@ interface AppState {
   /** Advances the on-air slide directly (Live pane's own transport), independent of Preview's
    *  selection — crosses into the next/previous service item once the current one runs out. */
   stepLive: (direction: -1 | 1) => void;
+  /** Like stepLive, but stops at the current item's own edges instead of crossing into the
+   *  next/previous service item — used by the remote-control page's Next/Prev, where crossing
+   *  items should only ever happen through an explicit stage-then-Go-Live, never a stray tap. */
+  stepLiveWithinItem: (direction: -1 | 1) => void;
   /** Jumps the on-air slide directly to a sub-slide within the current live item (e.g. clicking a
    *  specific verse row in the Live pane's slide list). */
   setLiveSubIndex: (subIndex: number) => void;
@@ -179,6 +183,26 @@ function sendProgramState(get: () => AppState) {
     backgroundVisible: state.liveBackgroundVisible,
   };
   window.api.live.goLive(programState);
+  syncRemoteQueue(get);
+}
+
+/** Pushes the schedule to the remote-control page (Settings > Remote Control) — a no-op if it isn't
+ *  running (main.ts just stores it for nobody). Called on every live/staged/schedule change, not
+ *  only from sendProgramState, since staging an item (tapping it on the phone) doesn't touch the
+ *  audience output until "Go Live" is pressed. */
+function syncRemoteQueue(get: () => AppState) {
+  const state = get();
+  const playlist = state.activePlaylist();
+  const items = playlist?.items ?? [];
+  window.api.remote.pushQueue(
+    items.map((item) => ({
+      id: item.id,
+      label: item.label,
+      type: item.type,
+      isLive: item.id === state.liveItemId,
+      isStaged: item.id === state.selection.itemId,
+    }))
+  );
 }
 
 function loadStoredTheme(): Theme {
@@ -194,6 +218,16 @@ function applyThemeToDocument(theme: Theme) {
 }
 
 let preServiceLoopTimer: ReturnType<typeof setInterval> | null = null;
+// Module-level (not per-store-instance) so a fresh HMR-reloaded module can tear down the PREVIOUS
+// module instance's listeners — see the comment at their call site in load() for why that matters.
+let unsubscribeDisplayStatus: (() => void) | null = null;
+let unsubscribeRemoteAction: (() => void) | null = null;
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    unsubscribeDisplayStatus?.();
+    unsubscribeRemoteAction?.();
+  });
+}
 
 /** Advances live to the next item marked loopSlide, wrapping around — used only by the
  *  pre-service loop's own timer, never by the manual goLive path (which calls
@@ -313,19 +347,31 @@ export const useStore = create<AppState>((set, get) => ({
       activePlaylistId = playlist.id;
     }
     set({ library, activePlaylistId, loading: false });
-    window.api.displays.onStatus((statuses) => set({ outputStatuses: statuses }));
-    const initialStatuses = await window.api.displays.getStatus();
-    set({ outputStatuses: initialStatuses });
-
+    // load() can run more than once — React 18 StrictMode deliberately double-invokes effects in
+    // dev with no cleanup here, and Vite HMR re-executes this whole module on every edit to this
+    // file, each time creating a fresh store instance. Without unsubscribing the OLD listener
+    // first, ipcRenderer (which lives in the preload script and is NOT reset by HMR) accumulates
+    // one stale listener per reload — all still firing, each against its own orphaned store
+    // instance, on top of the current one. That's why "next" could look like it crosses items again
+    // after a fix: a stale listener from before the fix was still attached and racing the new one.
+    unsubscribeDisplayStatus?.();
+    unsubscribeRemoteAction?.();
+    unsubscribeDisplayStatus = window.api.displays.onStatus((statuses) => set({ outputStatuses: statuses }));
     // A phone connected to the remote-control page (Settings > Remote Control) sends these —
     // route them through the same actions the control window's own buttons/keyboard use.
-    window.api.remote.onAction((type) => {
+    unsubscribeRemoteAction = window.api.remote.onAction((type, itemId) => {
       const state = get();
-      if (type === 'next') state.stepLive(1);
-      else if (type === 'prev') state.stepLive(-1);
+      // Deliberately stepLiveWithinItem, not stepLive: the remote should never cross into a
+      // different service item just from Next/Prev — only an explicit stage + Go Live does that.
+      if (type === 'next') state.stepLiveWithinItem(1);
+      else if (type === 'prev') state.stepLiveWithinItem(-1);
       else if (type === 'black') state.toggleBlack();
       else if (type === 'clear') (state.liveTextVisible ? state.clearText : state.restoreText)();
+      else if (type === 'stage' && itemId) state.select(itemId, 0);
+      else if (type === 'goLive') state.goLive();
     });
+    const initialStatuses = await window.api.displays.getStatus();
+    set({ outputStatuses: initialStatuses });
     const remoteStatus = await window.api.remote.getStatus();
     set({ remoteStatus });
   },
@@ -479,6 +525,7 @@ export const useStore = create<AppState>((set, get) => ({
     );
     await window.api.library.savePlaylists(playlists);
     set({ library: { ...library, playlists } });
+    syncRemoteQueue(get);
     return item;
   },
 
@@ -492,6 +539,7 @@ export const useStore = create<AppState>((set, get) => ({
     );
     await window.api.library.savePlaylists(playlists);
     set({ library: { ...library, playlists } });
+    syncRemoteQueue(get);
   },
 
   moveItem: async (itemId, direction) => {
@@ -507,6 +555,7 @@ export const useStore = create<AppState>((set, get) => ({
     const playlists = library.playlists.map((p) => (p.id === playlist.id ? { ...p, items, updatedAt: Date.now() } : p));
     await window.api.library.savePlaylists(playlists);
     set({ library: { ...library, playlists } });
+    syncRemoteQueue(get);
   },
 
   reorderItem: async (draggedId, targetId, position = 'before') => {
@@ -535,6 +584,7 @@ export const useStore = create<AppState>((set, get) => ({
     const playlists = library.playlists.map((p) => (p.id === playlist.id ? { ...p, items, updatedAt: Date.now() } : p));
     await window.api.library.savePlaylists(playlists);
     set({ library: { ...library, playlists } });
+    syncRemoteQueue(get);
   },
 
   undoSchedule: async () => {
@@ -549,6 +599,7 @@ export const useStore = create<AppState>((set, get) => ({
       scheduleUndoStack: scheduleUndoStack.slice(0, -1),
       scheduleRedoStack: [...scheduleRedoStack, playlist.items].slice(-SCHEDULE_UNDO_LIMIT),
     });
+    syncRemoteQueue(get);
   },
 
   redoSchedule: async () => {
@@ -563,6 +614,7 @@ export const useStore = create<AppState>((set, get) => ({
       scheduleRedoStack: scheduleRedoStack.slice(0, -1),
       scheduleUndoStack: [...scheduleUndoStack, playlist.items].slice(-SCHEDULE_UNDO_LIMIT),
     });
+    syncRemoteQueue(get);
   },
 
   togglePreServiceLoopItem: async (itemId) => {
@@ -586,7 +638,10 @@ export const useStore = create<AppState>((set, get) => ({
 
   stopPreServiceLoop: () => stopPreServiceLoopTimer(get, set),
 
-  select: (itemId, subIndex = 0) => set({ selection: { itemId, subIndex } }),
+  select: (itemId, subIndex = 0) => {
+    set({ selection: { itemId, subIndex } });
+    syncRemoteQueue(get);
+  },
 
   stepSubSlide: (direction) => {
     const { selection, library } = get();
@@ -627,6 +682,21 @@ export const useStore = create<AppState>((set, get) => ({
       liveTextVisible: true,
       liveBackgroundVisible: true,
     });
+    sendProgramState(get);
+  },
+
+  stepLiveWithinItem: (direction) => {
+    stopPreServiceLoopTimer(get, set);
+    dismissCountdownOverlay(get, set);
+    const { liveItemId, liveSubIndex, library } = get();
+    const playlist = get().activePlaylist();
+    if (!liveItemId || !library || !playlist) return;
+    const item = playlist.items.find((i) => i.id === liveItemId);
+    if (!item) return;
+    const count = getSubSlideCount(item, library);
+    const nextSub = Math.min(Math.max(liveSubIndex + direction, 0), count - 1);
+    if (nextSub === liveSubIndex) return;
+    set({ liveSubIndex: nextSub, liveTextVisible: true, liveBackgroundVisible: true });
     sendProgramState(get);
   },
 
@@ -711,6 +781,7 @@ export const useStore = create<AppState>((set, get) => ({
     set({ remoteBusy: true });
     const remoteStatus = await window.api.remote.start();
     set({ remoteStatus, remoteBusy: false });
+    syncRemoteQueue(get);
   },
 
   stopRemote: async () => {

@@ -168,6 +168,7 @@ export function installDevApiMock() {
       stop: async () => true,
       getStatus: async () => ({ running: false, url: null, qrDataUrl: null }),
       onAction: () => () => {},
+      pushQueue: async () => true,
     },
   };
 

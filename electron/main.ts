@@ -7,7 +7,8 @@ import { importPresentation } from './presentations';
 import { importSongFile, importSongsFromFolder } from './songImport';
 import { importEasyWorshipDatabase } from './easyworshipImport';
 import { TRANSLATIONS, getBooks, getChapterCount, getChapterVerses, searchVerses } from './bible';
-import { startRemoteServer, stopRemoteServer, getRemoteStatusWithQr, updateRemoteState, type RemoteActionType } from './remoteServer';
+import { startRemoteServer, stopRemoteServer, getRemoteStatusWithQr, updateRemoteState, updateRemoteQueue, type RemoteActionType } from './remoteServer';
+import type { RemoteQueueItem } from '@shared/api';
 import { probeVideoStreams, needsTranscode, transcodeToH264 } from './mediaTranscode';
 import type { MediaItem, OutputConfig, ProgramState } from '@shared/types';
 
@@ -327,8 +328,8 @@ ipcMain.handle(Channels.ClearLive, () => {
 });
 
 ipcMain.handle(Channels.RemoteStart, async () => {
-  startRemoteServer((type: RemoteActionType) => {
-    controlWindow?.webContents.send(Channels.RemoteAction, type);
+  await startRemoteServer((type: RemoteActionType, itemId?: string) => {
+    controlWindow?.webContents.send(Channels.RemoteAction, type, itemId);
   });
   updateRemoteState(lastProgramState);
   return getRemoteStatusWithQr();
@@ -340,6 +341,11 @@ ipcMain.handle(Channels.RemoteStop, () => {
 });
 
 ipcMain.handle(Channels.RemoteGetStatus, () => getRemoteStatusWithQr());
+
+ipcMain.handle(Channels.RemoteQueueUpdate, (_e, items: RemoteQueueItem[]) => {
+  updateRemoteQueue(items);
+  return true;
+});
 
 ipcMain.handle(Channels.ListDisplays, () => {
   const primaryId = screen.getPrimaryDisplay().id;

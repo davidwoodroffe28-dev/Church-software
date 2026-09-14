@@ -50,10 +50,11 @@ const api: ControlApi = {
     stop: () => ipcRenderer.invoke(Channels.RemoteStop),
     getStatus: () => ipcRenderer.invoke(Channels.RemoteGetStatus),
     onAction: (cb) => {
-      const listener = (_e: unknown, type: Parameters<typeof cb>[0]) => cb(type);
+      const listener = (_e: unknown, type: Parameters<typeof cb>[0], itemId?: string) => cb(type, itemId);
       ipcRenderer.on(Channels.RemoteAction, listener);
       return () => ipcRenderer.removeListener(Channels.RemoteAction, listener);
     },
+    pushQueue: (items) => ipcRenderer.invoke(Channels.RemoteQueueUpdate, items),
   },
 };
 

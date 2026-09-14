@@ -30,7 +30,17 @@ export interface RemoteStatus {
   qrDataUrl: string | null;
 }
 
-export type RemoteActionType = 'next' | 'prev' | 'black' | 'clear';
+export type RemoteActionType = 'next' | 'prev' | 'black' | 'clear' | 'stage' | 'goLive';
+
+/** One row in the remote page's queue list — deliberately just enough to render and tap, not a
+ *  full PlaylistItem (media refs, Bible references, etc. mean nothing to the phone). */
+export interface RemoteQueueItem {
+  id: string;
+  label: string;
+  type: string;
+  isLive: boolean;
+  isStaged: boolean;
+}
 
 export interface ImportResult {
   presentation?: Presentation;
@@ -91,7 +101,10 @@ export interface ControlApi {
     start: () => Promise<RemoteStatus>;
     stop: () => Promise<boolean>;
     getStatus: () => Promise<RemoteStatus>;
-    onAction: (cb: (type: RemoteActionType) => void) => () => void;
+    onAction: (cb: (type: RemoteActionType, itemId?: string) => void) => () => void;
+    /** Pushes the current schedule to the remote page's queue list — called whenever the service
+     *  list, staged item, or live item changes, not just when the audience output changes. */
+    pushQueue: (items: RemoteQueueItem[]) => Promise<boolean>;
   };
 }
 

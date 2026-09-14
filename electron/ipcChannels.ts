@@ -39,6 +39,8 @@ export const Channels = {
   RemoteStart: 'remote:start',
   RemoteStop: 'remote:stop',
   RemoteGetStatus: 'remote:getStatus',
+  // control window -> main, whenever the schedule/staged/live item changes
+  RemoteQueueUpdate: 'remote:queueUpdate',
   // main -> control window, when a phone triggers an action
   RemoteAction: 'remote:action',
 } as const;
