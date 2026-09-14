@@ -2,6 +2,14 @@ import { useEffect, useState } from 'react';
 import type { BibleVerse } from '@shared/types';
 import { useStore } from '../store';
 
+/** "16" for a single verse, "16-18" for a contiguous run, "16,18,21" for a scattered pick. */
+function formatVerseRange(verseNumbers: number[]): string {
+  const sorted = [...verseNumbers].sort((a, b) => a - b);
+  if (sorted.length <= 1) return String(sorted[0] ?? '');
+  const isContiguous = sorted.every((v, i) => i === 0 || v === sorted[i - 1] + 1);
+  return isContiguous ? `${sorted[0]}-${sorted[sorted.length - 1]}` : sorted.join(',');
+}
+
 export function BibleScreen() {
   const addPlaylistItem = useStore((s) => s.addPlaylistItem);
   const select = useStore((s) => s.select);
@@ -15,6 +23,8 @@ export function BibleScreen() {
   const [chapterCount, setChapterCount] = useState(0);
   const [chapter, setChapter] = useState<number | null>(null);
   const [verses, setVerses] = useState<BibleVerse[]>([]);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [lastClicked, setLastClicked] = useState<number | null>(null);
 
   useEffect(() => {
     window.api.bible.getTranslations().then((t) => {
@@ -42,31 +52,68 @@ export function BibleScreen() {
   useEffect(() => {
     if (!translation || !book || !chapter) return;
     window.api.bible.getChapterVerses(translation, book, chapter).then(setVerses);
+    setSelected(new Set());
+    setLastClicked(null);
   }, [translation, book, chapter]);
 
   const translationName = translations.find((t) => t.code === translation)?.name ?? translation.toUpperCase();
 
-  function verseRef(v: BibleVerse) {
-    return `${v.book} ${v.chapter}:${v.verse}`;
+  function toggleVerse(v: BibleVerse, shiftKey: boolean) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (shiftKey && lastClicked !== null) {
+        const lo = Math.min(lastClicked, v.verse);
+        const hi = Math.max(lastClicked, v.verse);
+        for (const other of verses) {
+          if (other.verse >= lo && other.verse <= hi) next.add(other.verse);
+        }
+      } else if (next.has(v.verse)) {
+        next.delete(v.verse);
+      } else {
+        next.add(v.verse);
+      }
+      return next;
+    });
+    setLastClicked(v.verse);
   }
 
-  function addVerse(v: BibleVerse) {
-    addPlaylistItem({
-      type: 'verse',
-      label: verseRef(v),
-      bible: { translation: translationName, book: v.book, chapter: v.chapter, verseStart: v.verse, text: v.text },
-    });
+  function selectedVerses(): BibleVerse[] {
+    return verses.filter((v) => selected.has(v.verse)).sort((a, b) => a.verse - b.verse);
   }
 
-  async function goLiveVerse(v: BibleVerse) {
-    const item = await addPlaylistItem({
-      type: 'verse',
-      label: verseRef(v),
-      bible: { translation: translationName, book: v.book, chapter: v.chapter, verseStart: v.verse, text: v.text },
-    });
+  function buildPlaylistItemData(picked: BibleVerse[]) {
+    const numbers = picked.map((v) => v.verse);
+    const ref = `${picked[0].book} ${picked[0].chapter}:${formatVerseRange(numbers)}`;
+    const text = picked.map((v) => `${v.verse} ${v.text}`).join('\n\n');
+    return {
+      type: 'verse' as const,
+      label: ref,
+      bible: {
+        translation: translationName,
+        book: picked[0].book,
+        chapter: picked[0].chapter,
+        verseStart: Math.min(...numbers),
+        verseEnd: Math.max(...numbers),
+        text,
+      },
+    };
+  }
+
+  function addSelection() {
+    const picked = selectedVerses();
+    if (!picked.length) return;
+    addPlaylistItem(buildPlaylistItemData(picked));
+    setSelected(new Set());
+  }
+
+  async function goLiveSelection() {
+    const picked = selectedVerses();
+    if (!picked.length) return;
+    const item = await addPlaylistItem(buildPlaylistItemData(picked));
     select(item.id, 0);
     await goLive();
     setActiveScreen('live');
+    setSelected(new Set());
   }
 
   return (
@@ -111,19 +158,32 @@ export function BibleScreen() {
           <span className="mono column-title">{book && chapter ? `${book.toUpperCase()} ${chapter}` : 'VERSES'}</span>
           <span className="mono column-count">{verses.length}</span>
         </div>
+        <div className="hint">Click a verse to highlight it, shift-click to select a range — then Add or Go live below.</div>
         <div className="verse-list">
           {verses.map((v) => (
-            <div key={v.verse} className="verse-row">
+            <div
+              key={v.verse}
+              className={'verse-row' + (selected.has(v.verse) ? ' verse-row-selected' : '')}
+              onClick={(e) => toggleVerse(v, e.shiftKey)}
+            >
               <div className="verse-row-text serif">
                 <span className="mono verse-number">{v.verse}</span> {v.text}
-              </div>
-              <div className="verse-row-actions">
-                <button onClick={() => addVerse(v)}>Add</button>
-                <button className="primary" onClick={() => goLiveVerse(v)}>Go live</button>
               </div>
             </div>
           ))}
         </div>
+        {selected.size > 0 && (
+          <div className="verse-selection-bar">
+            <span className="mono verse-selection-count">
+              {selected.size} VERSE{selected.size === 1 ? '' : 'S'} SELECTED
+            </span>
+            <div className="verse-selection-actions">
+              <button onClick={() => setSelected(new Set())}>Clear</button>
+              <button onClick={addSelection}>Add</button>
+              <button className="primary" onClick={goLiveSelection}>Go live</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

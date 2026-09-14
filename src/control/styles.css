@@ -1370,6 +1370,19 @@ label {
   gap: var(--sp-4);
   padding: var(--sp-3) var(--sp-2);
   border-bottom: 1px solid var(--line);
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  user-select: none;
+}
+.verse-row:hover {
+  background: var(--hover);
+}
+.verse-row-selected {
+  background: var(--panel2);
+  border-left-color: var(--accent);
+}
+.verse-row-selected:hover {
+  background: var(--panel2);
 }
 .verse-row-text {
   flex: 1;
@@ -1382,13 +1395,25 @@ label {
   font-size: 11px;
   margin-right: 2px;
 }
-.verse-row-actions {
+
+.verse-selection-bar {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--panel2);
+  border-radius: var(--radius-card);
   flex-shrink: 0;
 }
-.verse-row-actions button {
-  font-size: 12px;
+.verse-selection-count {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+.verse-selection-actions {
+  display: flex;
+  gap: 6px;
 }
 
 /* ---------- Media screen ---------- */
