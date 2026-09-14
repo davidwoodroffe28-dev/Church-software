@@ -85,12 +85,15 @@ function FullFrameContent({ slide, onPresentationPageCount }: Pick<Props, 'slide
     return <NativeSlideView slide={slide.nativeSlide} />;
   }
   if (slide.kind === 'media' && slide.background) {
+    // Unmuted, unlike BackgroundLayer's video: a full-frame media item is real video content (an
+    // announcement, a testimony, a worship video) that's expected to be heard, not an ambient loop
+    // playing under someone else talking or singing. Requires the output window's autoplayPolicy
+    // (main.ts) to actually autoplay with sound.
     return slide.background.type === 'video' ? (
       <video
         src={slide.background.value}
         autoPlay
         loop
-        muted
         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
       />
     ) : (

@@ -1,4 +1,4 @@
-import type { LibraryData, LiveSlide, Playlist, PlaylistItem, Template } from '@shared/types';
+import type { Background, LibraryData, LiveSlide, Playlist, PlaylistItem, Template } from '@shared/types';
 
 const FALLBACK_TEMPLATE: Template = {
   id: 'fallback',
@@ -127,4 +127,15 @@ export function getNextSlide(
   const idx = playlist.items.findIndex((i) => i.id === item.id);
   const nextItem = playlist.items[idx + 1];
   return nextItem ? buildLiveSlide(nextItem, 0, library) : undefined;
+}
+
+/** Layers the operator's directly-picked background (Backgrounds tab) over a text-kind slide's own
+ *  template background — a no-op for anything else (full-frame media/presentation ARE their own
+ *  visual, blank has nothing to layer onto, a countdown isn't a backdrop-behind-text situation). This
+ *  is what makes a background independent of the service: it applies to whatever song/verse/lower-
+ *  third happens to be live, without needing to be attached to that item or its theme first. */
+export function applyBackgroundOverride(slide: LiveSlide, override: Background | null): LiveSlide {
+  if (!override) return slide;
+  if (slide.kind !== 'song' && slide.kind !== 'verse' && slide.kind !== 'lowerThird') return slide;
+  return { ...slide, background: override };
 }

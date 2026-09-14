@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useStore, useActivePlaylist } from '../store';
-import { buildLiveSlide, getNextSlide } from '../slideBuilder';
+import { useStore, computeCurrentAndNext } from '../store';
 import { Toggle } from './Toggle';
 import { Timer } from './Timer';
 
@@ -23,9 +22,9 @@ function formatCountdown(totalSeconds: number): string {
 
 export function StageScreen() {
   const library = useStore((s) => s.library);
-  const playlist = useActivePlaylist();
   const liveItemId = useStore((s) => s.liveItemId);
   const liveSubIndex = useStore((s) => s.liveSubIndex);
+  const activePlaylistId = useStore((s) => s.activePlaylistId);
   const stageMessage = useStore((s) => s.stageMessage);
   const setStageMessage = useStore((s) => s.setStageMessage);
   const stageClock = useStore((s) => s.stageClock);
@@ -42,14 +41,10 @@ export function StageScreen() {
 
   if (!library) return null;
 
-  // Mirror sendProgramState's override exactly, so this mock never lies about what the room sees.
-  const liveItem = playlist?.items.find((i) => i.id === liveItemId) ?? null;
-  const currentSlide = countdown.showOnProgram
-    ? { kind: 'countdown' as const }
-    : liveItem
-      ? buildLiveSlide(liveItem, liveSubIndex, library)
-      : { kind: 'blank' as const };
-  const nextSlide = countdown.showOnProgram ? undefined : getNextSlide(playlist ?? null, liveItemId, liveSubIndex, library);
+  // Shares the exact same "what's actually on air" logic as the real broadcast (sendProgramState),
+  // so this mock can't quietly drift out of sync with what the room sees as new overrides are added.
+  const { current: currentSlide, next: nextSlide } = computeCurrentAndNext(useStore.getState);
+  const isLive = currentSlide.kind !== 'blank';
   const countdownRemaining =
     countdown.running && countdown.endAt ? Math.ceil(Math.max(0, countdown.endAt - now) / 1000) : countdown.remainingSec;
 
@@ -62,7 +57,7 @@ export function StageScreen() {
         <div className="stage-mock-lyric">
           {countdown.showOnProgram
             ? formatCountdown(countdownRemaining)
-            : currentSlide.text || (liveItem ? currentSlide.label : 'Nothing on air')}
+            : currentSlide.text || (isLive ? currentSlide.label : 'Nothing on air')}
         </div>
         {nextSlide && (
           <div className="stage-mock-next">

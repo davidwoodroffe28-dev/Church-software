@@ -55,6 +55,12 @@ function createControlWindow() {
       // local project files (our preload imports ./ipcChannels) — disable it for the preload only;
       // contextIsolation (the actual renderer/main isolation boundary) stays on.
       sandbox: false,
+      // Chromium normally blocks unmuted <video autoplay> without a prior user gesture in that
+      // frame — but slide changes here are driven by IPC, not a click inside the video's own
+      // document, so without this a full-frame media item with real audio would silently fail to
+      // play sound. Background-layer video (behind lyrics/scripture) stays explicitly muted in
+      // SlideView regardless of this policy — this only affects videos that opt in by not muting.
+      autoplayPolicy: 'no-user-gesture-required',
     },
   });
   loadRendererPage(controlWindow, 'index');
@@ -93,6 +99,7 @@ function createOutputWindow(config: OutputConfig) {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      autoplayPolicy: 'no-user-gesture-required',
     },
   });
 

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { PlaylistItem } from '@shared/types';
 import { useStore } from '../store';
-import { buildLiveSlide, getSubSlideCount } from '../slideBuilder';
+import { applyBackgroundOverride, buildLiveSlide, getSubSlideCount } from '../slideBuilder';
 import { SlideView } from '../../shared-ui/SlideView';
 
 interface Props {
@@ -35,10 +35,16 @@ export function SlidePane({
   backgroundVisible = true,
 }: Props) {
   const library = useStore((s) => s.library);
+  const backgroundOverride = useStore((s) => s.backgroundOverride);
   if (!library) return null;
 
   const subCount = item ? getSubSlideCount(item, library) : 0;
-  const activeSlide = item ? buildLiveSlide(item, activeSubIndex, library) : { kind: 'blank' as const };
+  // A background applied from the Backgrounds tab persists across whatever's staged/live, so the
+  // monitor here needs to reflect it too — otherwise Preview/Live would show the item's own theme
+  // background even though the actual output has the override layered on top.
+  const activeSlide = item
+    ? applyBackgroundOverride(buildLiveSlide(item, activeSubIndex, library), backgroundOverride)
+    : { kind: 'blank' as const };
   const rows = item
     ? Array.from({ length: subCount }, (_, idx) => ({ idx, slide: buildLiveSlide(item, idx, library) }))
     : [];

@@ -1471,6 +1471,18 @@ label {
   justify-content: center;
   background: rgba(0, 0, 0, 0.25);
 }
+.media-tile-applied {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  padding: 3px 7px;
+  border-radius: var(--radius-chip);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
 .media-tile-active .media-tile-frame {
   border-color: var(--accent);
   border-width: 2px;

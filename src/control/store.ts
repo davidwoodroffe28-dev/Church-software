@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { create } from 'zustand';
 import { v4 as uuid } from 'uuid';
 import type {
+  Background,
   LibraryData,
   LiveSlide,
   MediaItem,
@@ -14,7 +15,7 @@ import type {
   Template,
 } from '@shared/types';
 import type { OutputStatus, RemoteStatus } from '@shared/api';
-import { buildLiveSlide, getNextSlide, getSubSlideCount } from './slideBuilder';
+import { applyBackgroundOverride, buildLiveSlide, getNextSlide, getSubSlideCount } from './slideBuilder';
 
 interface Selection {
   itemId: string | null;
@@ -23,7 +24,7 @@ interface Selection {
 
 type Theme = 'dark' | 'light';
 
-export type ScreenTab = 'home' | 'live' | 'songs' | 'bible' | 'media' | 'slides' | 'themes' | 'stage' | 'settings';
+export type ScreenTab = 'home' | 'live' | 'songs' | 'bible' | 'media' | 'backgrounds' | 'slides' | 'themes' | 'stage' | 'settings';
 
 interface AppState {
   loading: boolean;
@@ -45,6 +46,7 @@ interface AppState {
   scheduleRedoStack: PlaylistItem[][];
   preServiceLoop: { active: boolean; intervalSec: number };
   countdown: { durationSec: number; remainingSec: number; running: boolean; endAt: number | null; showOnProgram: boolean };
+  backgroundOverride: Background | null;
 
   load: () => Promise<void>;
   toggleTheme: () => void;
@@ -127,29 +129,46 @@ interface AppState {
   pauseCountdown: () => void;
   resetCountdown: () => void;
   setCountdownOnProgram: (show: boolean) => void;
+
+  // Independent background layer (Backgrounds tab) — applies to whatever song/verse/lower-third
+  // is live without that item needing its own theme set up first.
+  setBackgroundOverride: (bg: Background | null) => void;
+  clearBackgroundOverride: () => void;
 }
 
-function sendProgramState(get: () => AppState) {
+/** The single source of truth for "what does the room actually see right now," reused by the real
+ *  broadcast (sendProgramState) and by any UI that needs to show an accurate live monitor (the
+ *  Stage screen's mock, the Backgrounds screen) instead of each re-deriving this logic and risking
+ *  drifting out of sync with what's actually on air. */
+export function computeCurrentAndNext(get: () => AppState): { current: LiveSlide; next?: LiveSlide } {
   const state = get();
   const library = state.library;
-  if (!library) return;
-
-  let current: LiveSlide;
-  let next: LiveSlide | undefined;
+  if (!library) return { current: { kind: 'blank' } };
 
   // The countdown is a deliberate override — while it's on, it IS the program output, same as the
   // pre-service loop taking over liveItemId. Broadcast the end time once (not a value every second)
   // so every output window ticks itself locally and stays in perfect sync — see CountdownSlide.
   if (state.countdown.showOnProgram) {
-    current = state.countdown.running
+    const current: LiveSlide = state.countdown.running
       ? { kind: 'countdown', countdownEndAt: state.countdown.endAt ?? undefined }
       : { kind: 'countdown', countdownRemainingSec: state.countdown.remainingSec };
-  } else {
-    const playlist = state.activePlaylist();
-    const item = playlist?.items.find((i) => i.id === state.liveItemId) ?? null;
-    current = item ? buildLiveSlide(item, state.liveSubIndex, library) : { kind: 'blank' as const };
-    next = getNextSlide(playlist, state.liveItemId, state.liveSubIndex, library);
+    return { current };
   }
+
+  const playlist = state.activePlaylist();
+  const item = playlist?.items.find((i) => i.id === state.liveItemId) ?? null;
+  const rawCurrent = item ? buildLiveSlide(item, state.liveSubIndex, library) : { kind: 'blank' as const };
+  const rawNext = getNextSlide(playlist, state.liveItemId, state.liveSubIndex, library);
+  return {
+    current: applyBackgroundOverride(rawCurrent, state.backgroundOverride),
+    next: rawNext ? applyBackgroundOverride(rawNext, state.backgroundOverride) : undefined,
+  };
+}
+
+function sendProgramState(get: () => AppState) {
+  const state = get();
+  if (!state.library) return;
+  const { current, next } = computeCurrentAndNext(get);
 
   const programState: ProgramState = {
     current,
@@ -238,6 +257,7 @@ export const useStore = create<AppState>((set, get) => ({
   scheduleRedoStack: [],
   preServiceLoop: { active: false, intervalSec: 8 },
   countdown: { durationSec: 300, remainingSec: 300, running: false, endAt: null, showOnProgram: false },
+  backgroundOverride: null,
 
   setActiveScreen: (screen) => set({ activeScreen: screen }),
 
@@ -730,6 +750,16 @@ export const useStore = create<AppState>((set, get) => ({
 
   setCountdownOnProgram: (show) => {
     set({ countdown: { ...get().countdown, showOnProgram: show } });
+    sendProgramState(get);
+  },
+
+  setBackgroundOverride: (bg) => {
+    set({ backgroundOverride: bg });
+    sendProgramState(get);
+  },
+
+  clearBackgroundOverride: () => {
+    set({ backgroundOverride: null });
     sendProgramState(get);
   },
 }));

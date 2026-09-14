@@ -6,6 +6,7 @@ const TABS: { id: ScreenTab; label: string }[] = [
   { id: 'songs', label: 'Songs' },
   { id: 'bible', label: 'Bible' },
   { id: 'media', label: 'Media' },
+  { id: 'backgrounds', label: 'Backgrounds' },
   { id: 'slides', label: 'Slides' },
   { id: 'themes', label: 'Themes' },
   { id: 'stage', label: 'Stage' },

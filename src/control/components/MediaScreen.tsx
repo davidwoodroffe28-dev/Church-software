@@ -90,7 +90,7 @@ export function MediaScreen() {
               {selected.type === 'image' ? (
                 <img src={selected.filePath} alt="" />
               ) : (
-                <video ref={videoRef} src={selected.filePath} muted loop />
+                <video ref={videoRef} src={selected.filePath} loop />
               )}
             </div>
             {selected.type === 'video' && (

@@ -118,7 +118,7 @@ Never below 9.5px, and only ever mono at that size. Body text never below 12.5px
 
 ```
 Title bar      app · service name · saved · theme toggle · ON AIR chip · window controls
-Tab row        Home  Live  Songs  Bible  Media  Slides  Themes  Stage  Settings
+Tab row        Home  Live  Songs  Bible  Media  Backgrounds  Slides  Themes  Stage  Settings
 Screen         (varies — see below)
 Status bar     live item · state · output resolution · keyboard hints
 ```
@@ -154,6 +154,11 @@ monitor      16:9 output with song credits in the corner
 - **Songs** — sections list · title + lyric textarea + live slide split · details and arrangement.
 - **Bible** — translation and book · chapter grid · verse list with Add / Go live.
 - **Media** — filter pills, 16:9 thumbnail grid, selected-item panel with playback toggles.
+- **Backgrounds** — same thumbnail-grid layout as Media, but clicking a tile applies it live
+  immediately as an independent layer underneath whatever song/scripture/lower-third is on air —
+  it is never a schedule item and needs no Theme built first. Persists across the whole service
+  until cleared or replaced. Right panel always shows the real "what the room sees" monitor
+  (Principle 5) plus a Clear background action.
 - **Slides** — imported PowerPoint library: 16:9 thumbnail grid (real rendered first slides, not
   icons), selected-item panel with page-by-page navigation through that presentation.
 - **Themes** — theme list · large 16:9 preview · font, size, alignment, effects.
