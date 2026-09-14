@@ -163,6 +163,18 @@ export function SongsScreen() {
               onChange={(e) => updateDraft({ author: e.target.value })}
               placeholder="Author (optional)"
             />
+            <label style={{ marginTop: 'var(--sp-2)' }}>
+              Theme
+              <select
+                value={draft.templateId ?? ''}
+                onChange={(e) => updateDraft({ templateId: e.target.value || undefined })}
+              >
+                <option value="">Default</option>
+                {library.templates.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </label>
 
             <div className="mono column-title" style={{ marginTop: 'var(--sp-3)' }}>ARRANGEMENT</div>
             <div className="sections-arrangement">
