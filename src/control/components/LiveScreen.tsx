@@ -115,6 +115,7 @@ export function LiveScreen() {
           onStep={stepLive}
           textVisible={liveTextVisible}
           backgroundVisible={liveBackgroundVisible}
+          onAir={!!liveItemId}
           headerExtra={
             liveItemId ? (
               <button className="take-off-air" onClick={clearLive}>

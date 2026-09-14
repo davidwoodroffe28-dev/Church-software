@@ -9,7 +9,9 @@ html, body, #root {
 
 body {
   font-family: var(--font-ui);
-  background: var(--bg);
+  /* A faint top-down gradient instead of a dead-flat fill — subtle enough to not read as a
+     "look, a gradient" effect, just enough to keep one solid color from looking like a void. */
+  background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 35%, var(--bg)), var(--bg) 480px);
   color: var(--ink);
 }
 
@@ -34,7 +36,7 @@ button:hover:not(:disabled) {
   background-color: var(--hover);
 }
 button:active:not(:disabled) {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.98);
   box-shadow: var(--shadow-control-pressed);
 }
 button:disabled {
@@ -47,6 +49,7 @@ button.primary {
   border-color: var(--accent);
   color: var(--on-accent);
   font-weight: 600;
+  box-shadow: var(--glow-accent);
 }
 button.primary:hover:not(:disabled) {
   filter: brightness(1.08);
@@ -250,6 +253,7 @@ label {
   border-bottom: 1px solid var(--line);
 }
 .nav-tab {
+  position: relative;
   background-color: transparent;
   background-image: none;
   border: 1px solid transparent;
@@ -267,8 +271,18 @@ label {
   background-image: var(--control-highlight);
   border-color: var(--accent);
   color: var(--ink);
-  font-weight: 500;
-  box-shadow: var(--shadow-control);
+  font-weight: 600;
+  box-shadow: var(--glow-accent);
+}
+.nav-tab.active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
 }
 
 /* ---------- status bar ---------- */
@@ -532,6 +546,7 @@ label {
 .service-row-staged {
   background: var(--panel2);
   border-color: var(--accent);
+  box-shadow: var(--glow-accent);
 }
 .service-row-staged:hover {
   background: var(--panel2);
@@ -770,6 +785,7 @@ label {
   color: var(--on-accent);
   font-weight: 600;
   font-size: 13.5px;
+  box-shadow: var(--glow-cta);
 }
 .send-to-live:hover:not(:disabled) {
   filter: brightness(1.08);
@@ -797,6 +813,10 @@ label {
   box-shadow: var(--shadow-raised);
   overflow: hidden;
   flex-shrink: 0;
+  transition: box-shadow 200ms ease;
+}
+.slide-monitor-onair {
+  box-shadow: var(--shadow-raised), var(--glow-live);
 }
 
 /* ---------- modals (Song Editor, Outputs Settings) ---------- */

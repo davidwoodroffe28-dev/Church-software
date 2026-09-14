@@ -17,6 +17,10 @@ interface Props {
   headerExtra?: ReactNode;
   textVisible?: boolean;
   backgroundVisible?: boolean;
+  /** True only for the Live pane when something is actually on air — distinct from kind === 'live',
+   *  which is true for that pane even when nothing's live yet, so the on-air glow doesn't show for
+   *  an empty live monitor. */
+  onAir?: boolean;
 }
 
 /** Preview and Live are the same vertical stack — header, slide list, transport, monitor — so both
@@ -33,6 +37,7 @@ export function SlidePane({
   headerExtra,
   textVisible = true,
   backgroundVisible = true,
+  onAir = false,
 }: Props) {
   const library = useStore((s) => s.library);
   const backgroundOverride = useStore((s) => s.backgroundOverride);
@@ -99,7 +104,7 @@ export function SlidePane({
         {actions}
       </div>
 
-      <div className="slide-monitor">
+      <div className={'slide-monitor' + (onAir ? ' slide-monitor-onair' : '')}>
         <SlideView slide={activeSlide} mode="full" textVisible={textVisible} backgroundVisible={backgroundVisible} />
       </div>
     </div>

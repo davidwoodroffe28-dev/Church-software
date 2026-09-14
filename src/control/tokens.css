@@ -2,15 +2,18 @@
 
 :root {
   color-scheme: dark;
-  --bg: #16181c;
-  --panel: #1c1f24;
-  --panel2: #23272d;
-  --line: #30353d;
+  /* A shade lighter than a "true black" OLED dark mode — enough to read as an elevated charcoal
+     panel rather than a void, so shadows/glows (--shadow-raised etc.) have something to read
+     against. --screen stays near-black on purpose: it's simulating an actual projector output. */
+  --bg: #1e2126;
+  --panel: #262a30;
+  --panel2: #2e333a;
+  --line: #3c424b;
   --ink: #e9ebee;
   --ink2: #aab3bd;
   --ink3: #8b939d;
-  --hover: #282d34;
-  --input: #13161a;
+  --hover: #333941;
+  --input: #191c21;
   /* Brand colours sourced from newtestamentbarbados.com's own stylesheet. */
   --accent: #1b75bb;
   --on-accent: #ffffff;
@@ -46,6 +49,11 @@
   --shadow-well: inset 0 1px 3px rgba(0, 0, 0, 0.4);
   --control-highlight: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 45%);
   --control-highlight-strong: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 45%);
+  /* Colored glows — the one deliberate "pop" element: reserved for the few things that should read
+     as alive/important at a glance (primary CTA, the on-air monitor, the active tab), never ambient. */
+  --glow-accent: 0 0 0 1px rgba(27, 117, 187, 0.4), 0 4px 20px rgba(27, 117, 187, 0.35);
+  --glow-cta: 0 0 0 1px rgba(246, 146, 30, 0.45), 0 4px 20px rgba(246, 146, 30, 0.35);
+  --glow-live: 0 0 0 1px rgba(201, 86, 79, 0.55), 0 0 24px rgba(201, 86, 79, 0.45);
 
   --font-ui: 'IBM Plex Sans', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -65,6 +73,7 @@
   --input: #ffffff;
   --live: #b8453d;
   --screen: #15181c;
+  --glow-live: 0 0 0 1px rgba(184, 69, 61, 0.5), 0 0 24px rgba(184, 69, 61, 0.4);
 
   --shadow-raised: 0 1px 2px rgba(28, 32, 38, 0.05), 0 8px 24px rgba(28, 32, 38, 0.07);
   --shadow-control: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 1px 2px rgba(28, 32, 38, 0.14);
