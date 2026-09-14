@@ -8,7 +8,7 @@ import { importSongFile, importSongsFromFolder } from './songImport';
 import { importEasyWorshipDatabase } from './easyworshipImport';
 import { TRANSLATIONS, getBooks, getChapterCount, getChapterVerses, searchVerses } from './bible';
 import { startRemoteServer, stopRemoteServer, getRemoteStatusWithQr, updateRemoteState, type RemoteActionType } from './remoteServer';
-import { probeVideoCodec, needsTranscode, transcodeToH264 } from './mediaTranscode';
+import { probeVideoStreams, needsTranscode, transcodeToH264 } from './mediaTranscode';
 import type { MediaItem, OutputConfig, ProgramState } from '@shared/types';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -62,10 +62,23 @@ function createControlWindow() {
       // play sound. Background-layer video (behind lyrics/scripture) stays explicitly muted in
       // SlideView regardless of this policy — this only affects videos that opt in by not muting.
       autoplayPolicy: 'no-user-gesture-required',
+      // In dev, this page loads from http://localhost:5173 (Vite) rather than file:// — Chromium's
+      // same-origin policy then blocks *any* file:// media the page references ("Not allowed to
+      // load local resource"), independent of codec, which is exactly the "video won't play"
+      // reports this was chased down from. Doesn't apply to the packaged app, which loads its own
+      // index.html via file:// too (matching origin), so this only relaxes anything during dev.
+      webSecurity: !isDev,
     },
   });
   loadRendererPage(controlWindow, 'index');
-  if (isDev) controlWindow.webContents.openDevTools({ mode: 'detach' });
+  if (isDev) {
+    controlWindow.webContents.openDevTools({ mode: 'detach' });
+    // Renderer console.* calls only show in that window's own DevTools by default — forward them
+    // to this process's stdout too, so they show up alongside the main-process logs during dev.
+    controlWindow.webContents.on('console-message', (_e, level, message, line, sourceId) => {
+      console.log(`[renderer:${level}] ${message} (${sourceId}:${line})`);
+    });
+  }
   controlWindow.on('closed', () => {
     controlWindow = null;
   });
@@ -101,6 +114,9 @@ function createOutputWindow(config: OutputConfig) {
       nodeIntegration: false,
       sandbox: false,
       autoplayPolicy: 'no-user-gesture-required',
+      // See createControlWindow's webSecurity comment — output windows load output.html from the
+      // same Vite dev server in dev, so they need the same relaxation to play file:// media there.
+      webSecurity: !isDev,
     },
   });
 
@@ -208,12 +224,18 @@ ipcMain.handle(Channels.PickMediaFiles, async () => {
       // Electron/Chromium only decodes h264/vp8/vp9/av1 — anything else (HEVC above all, the
       // default on iPhone recordings) renders blank with no visual signal. Transcode proactively
       // so a volunteer never has to know or care what codec their phone used.
-      const codec = await probeVideoCodec(filePath);
-      if (needsTranscode(codec)) {
+      const probe = await probeVideoStreams(filePath);
+      const mustConvert = needsTranscode(probe);
+      console.log(
+        `[media-transcode] ${name}: video=${probe.videoCodec ?? '(null)'} profile=${probe.videoProfile ?? '(none)'} pix_fmt=${probe.pixFmt ?? '(none)'} audio=${probe.audioCodec ?? '(none)'} needsTranscode=${mustConvert}`
+      );
+      if (mustConvert) {
         try {
           resolvedPath = await transcodeToH264(filePath);
+          console.log(`[media-transcode] ${name}: converted -> ${resolvedPath}`);
         } catch (err) {
-          warnings.push(`${name}: couldn't convert (${codec ?? 'unreadable'}) — ${err instanceof Error ? err.message : String(err)}`);
+          console.error(`[media-transcode] ${name}: FAILED`, err);
+          warnings.push(`${name}: couldn't convert (${probe.videoCodec ?? 'unreadable'}) — ${err instanceof Error ? err.message : String(err)}`);
         }
       }
     }

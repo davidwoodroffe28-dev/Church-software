@@ -45,6 +45,12 @@ export const SafeVideo = forwardRef<HTMLVideoElement, VideoHTMLAttributes<HTMLVi
       style={style}
       onError={(e) => {
         const code = e.currentTarget.error?.code;
+        // eslint-disable-next-line no-console
+        console.error('[SafeVideo] decode failed', {
+          src: e.currentTarget.currentSrc || e.currentTarget.src,
+          code,
+          message: e.currentTarget.error?.message,
+        });
         setError(ERROR_CODES[code ?? 0] ?? `unknown (code ${code ?? '?'})`);
         onError?.(e);
       }}

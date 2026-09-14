@@ -16,7 +16,13 @@ const execFileAsync = promisify(execFile);
 // Chromium (and therefore Electron) decodes these natively — no conversion needed. Anything else
 // (HEVC/H.265 above all — the default on iPhone recordings since iOS 11 — plus older MPEG-4 Part 2,
 // WMV, etc.) fails to decode at all in Electron, silently rendering blank with a plain <video>.
-const BROWSER_SAFE_CODECS = new Set(['h264', 'vp8', 'vp9', 'av1', 'theora']);
+const BROWSER_SAFE_VIDEO_CODECS = new Set(['h264', 'vp8', 'vp9', 'av1', 'theora']);
+// Chromium's software H.264 decoder only supports 8-bit 4:2:0 — "High 10", "High 4:2:2" and
+// "High 4:4:4 Predictive" profiles (common in exports from pro editing tools that master in
+// 10-bit) report codec_name "h264" but still fail to decode, so codec name alone isn't enough.
+const UNSAFE_H264_PROFILE = /10|4:2:2|4:4:4/i;
+const UNSAFE_PIX_FMT = /p10|p12|422|444/i;
+const BROWSER_SAFE_AUDIO_CODECS = new Set(['aac', 'mp3', 'opus', 'vorbis', 'pcm_u8', 'pcm_s16le']);
 
 function convertedMediaDir(): string {
   const dir = path.join(app.getPath('userData'), 'media-converted');
@@ -24,24 +30,44 @@ function convertedMediaDir(): string {
   return dir;
 }
 
-/** Returns the video stream's codec name (e.g. "h264", "hevc"), or null if ffprobe can't read it —
- *  treated as "needs transcoding" by the caller, since an unreadable codec is not a safe one. */
-export async function probeVideoCodec(filePath: string): Promise<string | null> {
+export interface VideoProbeResult {
+  videoCodec: string | null;
+  videoProfile: string | null;
+  pixFmt: string | null;
+  audioCodec: string | null;
+}
+
+/** Probes both video and audio streams — codec name alone isn't enough to know whether Electron can
+ *  play the file back (see UNSAFE_H264_PROFILE above), so this reports profile/pixel format too. */
+export async function probeVideoStreams(filePath: string): Promise<VideoProbeResult> {
   try {
     const { stdout } = await execFileAsync(
       ffprobePath,
-      ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=codec_name', '-of', 'csv=p=0', filePath],
+      ['-v', 'error', '-show_entries', 'stream=codec_type,codec_name,profile,pix_fmt', '-of', 'json', filePath],
       { timeout: 15_000 }
     );
-    const codec = stdout.trim().toLowerCase();
-    return codec || null;
+    const parsed = JSON.parse(stdout) as { streams?: Array<Record<string, string>> };
+    const streams = parsed.streams ?? [];
+    const video = streams.find((s) => s.codec_type === 'video');
+    const audio = streams.find((s) => s.codec_type === 'audio');
+    return {
+      videoCodec: video?.codec_name?.toLowerCase() ?? null,
+      videoProfile: video?.profile ?? null,
+      pixFmt: video?.pix_fmt ?? null,
+      audioCodec: audio?.codec_name?.toLowerCase() ?? null,
+    };
   } catch {
-    return null;
+    return { videoCodec: null, videoProfile: null, pixFmt: null, audioCodec: null };
   }
 }
 
-export function needsTranscode(codec: string | null): boolean {
-  return !codec || !BROWSER_SAFE_CODECS.has(codec);
+export function needsTranscode(probe: VideoProbeResult): boolean {
+  const { videoCodec, videoProfile, pixFmt, audioCodec } = probe;
+  if (!videoCodec || !BROWSER_SAFE_VIDEO_CODECS.has(videoCodec)) return true;
+  if (videoProfile && UNSAFE_H264_PROFILE.test(videoProfile)) return true;
+  if (pixFmt && UNSAFE_PIX_FMT.test(pixFmt)) return true;
+  if (audioCodec && !BROWSER_SAFE_AUDIO_CODECS.has(audioCodec)) return true;
+  return false;
 }
 
 /** Transcodes to an H.264/AAC MP4 Electron can always decode. Takes real time for longer clips —
