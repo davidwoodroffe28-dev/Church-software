@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { LiveSlide } from '@shared/types';
 import { PdfPageCanvas } from './PdfPageCanvas';
 import { NativeSlideView } from './NativeSlideView';
+import { SafeVideo } from './SafeVideo';
 
 function formatCountdown(totalSec: number): string {
   const clamped = Math.max(0, totalSec);
@@ -55,7 +56,7 @@ function BackgroundLayer({ background }: { background: LiveSlide['background'] }
   }
   if (background.type === 'video') {
     return (
-      <video
+      <SafeVideo
         src={background.value}
         autoPlay
         loop
@@ -90,7 +91,7 @@ function FullFrameContent({ slide, onPresentationPageCount }: Pick<Props, 'slide
     // playing under someone else talking or singing. Requires the output window's autoplayPolicy
     // (main.ts) to actually autoplay with sound.
     return slide.background.type === 'video' ? (
-      <video
+      <SafeVideo
         src={slide.background.value}
         autoPlay
         loop

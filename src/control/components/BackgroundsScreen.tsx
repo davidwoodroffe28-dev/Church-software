@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { MediaItem } from '@shared/types';
 import { useStore, computeCurrentAndNext } from '../store';
 import { SlideView } from '../../shared-ui/SlideView';
+import { SafeVideo } from '../../shared-ui/SafeVideo';
 
 type Filter = 'all' | 'image' | 'video';
 
@@ -67,7 +68,7 @@ export function BackgroundsScreen() {
                   {m.type === 'image' ? (
                     <img src={m.filePath} alt="" />
                   ) : (
-                    <video src={m.filePath} muted preload="metadata" />
+                    <SafeVideo src={m.filePath} muted preload="metadata" />
                   )}
                   {m.type === 'video' && (
                     <span className="media-tile-play">

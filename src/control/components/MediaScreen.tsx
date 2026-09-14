@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import type { MediaItem } from '@shared/types';
 import { useStore } from '../store';
+import { SafeVideo } from '../../shared-ui/SafeVideo';
 
 type Filter = 'all' | 'image' | 'video';
 
@@ -65,7 +66,7 @@ export function MediaScreen() {
                   {m.type === 'image' ? (
                     <img src={m.filePath} alt="" />
                   ) : (
-                    <video src={m.filePath} muted preload="metadata" />
+                    <SafeVideo src={m.filePath} muted preload="metadata" />
                   )}
                   {m.type === 'video' && (
                     <span className="media-tile-play">
@@ -90,7 +91,7 @@ export function MediaScreen() {
               {selected.type === 'image' ? (
                 <img src={selected.filePath} alt="" />
               ) : (
-                <video ref={videoRef} src={selected.filePath} loop />
+                <SafeVideo ref={videoRef} src={selected.filePath} loop />
               )}
             </div>
             {selected.type === 'video' && (
