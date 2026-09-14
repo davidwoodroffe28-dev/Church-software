@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import type { BibleVerse, Song } from '@shared/types';
 import { useStore, newSong, mediaItemLabel, sortSongsForQuickAccess } from '../store';
 import { SongEditor } from './SongEditor';
@@ -23,6 +24,13 @@ const FILTERS: { id: Filter; label: string; color: string }[] = [
 export function LibraryColumn() {
   const [filter, setFilter] = useState<Filter>('songs');
   const [query, setQuery] = useState('');
+  // Shared by every filter tab's scroll container — only the (potentially very large) Songs list
+  // actually virtualizes against it; see SongsFilter. A callback ref (state), not a plain useRef:
+  // useVirtualizer reads the scroll element during its own first render, which is always before a
+  // plain ref gets attached — a state-backed ref makes element-attachment itself trigger the
+  // re-render the virtualizer needs to pick it up, instead of relying on some unrelated effect
+  // elsewhere to incidentally cause a second render.
+  const [listEl, setListEl] = useState<HTMLDivElement | null>(null);
 
   return (
     <div className="library-column">
@@ -52,8 +60,8 @@ export function LibraryColumn() {
         ))}
       </div>
 
-      <div className="library-list">
-        {filter === 'songs' && <SongsFilter query={query} />}
+      <div className="library-list" ref={setListEl}>
+        {filter === 'songs' && <SongsFilter query={query} scrollElement={listEl} />}
         {filter === 'scripture' && <ScriptureFilter />}
         {filter === 'media' && <MediaFilter query={query} />}
         {filter === 'slides' && <SlidesFilter query={query} />}
@@ -99,7 +107,7 @@ function LibraryRow({
   );
 }
 
-function SongsFilter({ query }: { query: string }) {
+function SongsFilter({ query, scrollElement }: { query: string; scrollElement: HTMLDivElement | null }) {
   const library = useStore((s) => s.library);
   const upsertSong = useStore((s) => s.upsertSong);
   const deleteSong = useStore((s) => s.deleteSong);
@@ -122,6 +130,17 @@ function SongsFilter({ query }: { query: string }) {
     (library?.songs ?? []).filter((s) => s.title.toLowerCase().includes(query.toLowerCase()))
   );
 
+  // A real church song library can run into the thousands — mounting one row per song made
+  // switching to this tab take 1-2+ seconds. Only visible rows (plus a little overscan) are
+  // actually rendered; the sizer div below reproduces the full scroll height so scrollbar/scroll
+  // position behave exactly as if every row were there.
+  const virtualizer = useVirtualizer({
+    count: songs.length,
+    getScrollElement: () => scrollElement,
+    estimateSize: () => 46,
+    overscan: 12,
+  });
+
   return (
     <div className="library-tab-body">
       <div className="import-row">
@@ -137,30 +156,41 @@ function SongsFilter({ query }: { query: string }) {
         </button>
       </div>
       {importStatus && <p className="hint">{importStatus}</p>}
-      {songs.map((song) => (
-        <LibraryRow
-          key={song.id}
-          color="var(--type-song)"
-          title={song.title}
-          meta={`SONG · ${song.sections.length} SECTION${song.sections.length === 1 ? '' : 'S'}`}
-          onClick={() => setEditing(song)}
-          onAdd={() => addSongToService(song)}
-          extra={
-            <>
-              <button
-                className="row-icon-btn"
-                onClick={(e) => { e.stopPropagation(); toggleSongFavorite(song.id); }}
-                title={song.favorite ? 'Remove from favorites' : 'Add to favorites'}
-              >
-                <StarIcon filled={!!song.favorite} />
-              </button>
-              <button className="row-icon-btn" onClick={(e) => { e.stopPropagation(); deleteSong(song.id); }} title="Delete">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
-              </button>
-            </>
-          }
-        />
-      ))}
+      <div style={{ position: 'relative', height: virtualizer.getTotalSize(), width: '100%' }}>
+        {virtualizer.getVirtualItems().map((row) => {
+          const song = songs[row.index];
+          return (
+            <div
+              key={song.id}
+              ref={virtualizer.measureElement}
+              data-index={row.index}
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', paddingBottom: 2, transform: `translateY(${row.start}px)` }}
+            >
+              <LibraryRow
+                color="var(--type-song)"
+                title={song.title}
+                meta={`SONG · ${song.sections.length} SECTION${song.sections.length === 1 ? '' : 'S'}`}
+                onClick={() => setEditing(song)}
+                onAdd={() => addSongToService(song)}
+                extra={
+                  <>
+                    <button
+                      className="row-icon-btn"
+                      onClick={(e) => { e.stopPropagation(); toggleSongFavorite(song.id); }}
+                      title={song.favorite ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <StarIcon filled={!!song.favorite} />
+                    </button>
+                    <button className="row-icon-btn" onClick={(e) => { e.stopPropagation(); deleteSong(song.id); }} title="Delete">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
+                    </button>
+                  </>
+                }
+              />
+            </div>
+          );
+        })}
+      </div>
       {editing && (
         <SongEditor
           song={editing}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Song, SongSection } from '@shared/types';
 import { useStore, useActivePlaylist, newSong, newSongSection, sortSongsForQuickAccess } from '../store';
 import { buildLiveSlide } from '../slideBuilder';
@@ -31,6 +32,19 @@ export function SongsScreen() {
   const songs = sortSongsForQuickAccess(
     (library?.songs ?? []).filter((s) => s.title.toLowerCase().includes(query.toLowerCase()))
   );
+
+  // Same reasoning as LibraryColumn's SongsFilter — a real song library can run into the
+  // thousands, so only visible rows are actually mounted. A callback ref (state), not a plain
+  // useRef: useVirtualizer reads the scroll element during its own first render, which is always
+  // before a plain ref gets attached, so a state-backed ref is needed to give it a real second
+  // look once the element exists.
+  const [listEl, setListEl] = useState<HTMLDivElement | null>(null);
+  const virtualizer = useVirtualizer({
+    count: songs.length,
+    getScrollElement: () => listEl,
+    estimateSize: () => 46,
+    overscan: 12,
+  });
 
   function loadSong(song: Song) {
     setSelectedId(song.id);
@@ -117,30 +131,38 @@ export function SongsScreen() {
           <button onClick={() => importEasyWorship().then((r) => setImportStatus(`Imported ${r.imported} song(s).`))}>EasyWorship…</button>
         </div>
         {importStatus && <p className="hint">{importStatus}</p>}
-        <div className="songs-list">
-          {songs.map((song) => (
-            <div
-              key={song.id}
-              className={'library-row' + (song.id === selectedId ? ' songs-row-active' : '')}
-              onClick={() => loadSong(song)}
-            >
-              <span className="type-stripe" style={{ background: 'var(--type-song)' }} />
-              <div className="library-row-body">
-                <div className="library-row-title">{song.title}</div>
-                <div className="mono library-row-meta">{song.sections.length} SECTION{song.sections.length === 1 ? '' : 'S'}</div>
-              </div>
-              <button
-                className="row-icon-btn"
-                onClick={(e) => { e.stopPropagation(); toggleSongFavorite(song.id); }}
-                title={song.favorite ? 'Remove from favorites' : 'Add to favorites'}
-              >
-                <StarIcon filled={!!song.favorite} />
-              </button>
-              <button className="row-icon-btn" onClick={(e) => { e.stopPropagation(); deleteSong(song.id); if (song.id === selectedId) setSelectedId(null); }} title="Delete">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
-              </button>
-            </div>
-          ))}
+        <div className="songs-list" ref={setListEl}>
+          <div style={{ position: 'relative', height: virtualizer.getTotalSize(), width: '100%' }}>
+            {virtualizer.getVirtualItems().map((row) => {
+              const song = songs[row.index];
+              return (
+                <div
+                  key={song.id}
+                  ref={virtualizer.measureElement}
+                  data-index={row.index}
+                  className={'library-row' + (song.id === selectedId ? ' songs-row-active' : '')}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', paddingBottom: 2, transform: `translateY(${row.start}px)` }}
+                  onClick={() => loadSong(song)}
+                >
+                  <span className="type-stripe" style={{ background: 'var(--type-song)' }} />
+                  <div className="library-row-body">
+                    <div className="library-row-title">{song.title}</div>
+                    <div className="mono library-row-meta">{song.sections.length} SECTION{song.sections.length === 1 ? '' : 'S'}</div>
+                  </div>
+                  <button
+                    className="row-icon-btn"
+                    onClick={(e) => { e.stopPropagation(); toggleSongFavorite(song.id); }}
+                    title={song.favorite ? 'Remove from favorites' : 'Add to favorites'}
+                  >
+                    <StarIcon filled={!!song.favorite} />
+                  </button>
+                  <button className="row-icon-btn" onClick={(e) => { e.stopPropagation(); deleteSong(song.id); if (song.id === selectedId) setSelectedId(null); }} title="Delete">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
