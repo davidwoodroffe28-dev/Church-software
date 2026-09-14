@@ -8,6 +8,7 @@ import { importSongFile, importSongsFromFolder } from './songImport';
 import { importEasyWorshipDatabase } from './easyworshipImport';
 import { TRANSLATIONS, getBooks, getChapterCount, getChapterVerses, searchVerses } from './bible';
 import { startRemoteServer, stopRemoteServer, getRemoteStatusWithQr, updateRemoteState, type RemoteActionType } from './remoteServer';
+import { probeVideoCodec, needsTranscode, transcodeToH264 } from './mediaTranscode';
 import type { MediaItem, OutputConfig, ProgramState } from '@shared/types';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -183,7 +184,7 @@ ipcMain.handle(Channels.SaveOutputConfigs, (_e, outputConfigs: OutputConfig[]) =
 });
 
 ipcMain.handle(Channels.PickMediaFiles, async () => {
-  if (!controlWindow) return [];
+  if (!controlWindow) return { items: [], warnings: [] };
   const result = await dialog.showOpenDialog(controlWindow, {
     title: 'Add media',
     properties: ['openFile', 'multiSelections'],
@@ -192,19 +193,41 @@ ipcMain.handle(Channels.PickMediaFiles, async () => {
       { name: 'Videos', extensions: ['mp4', 'webm', 'mov', 'mkv'] },
     ],
   });
-  if (result.canceled) return [];
-  const items: MediaItem[] = result.filePaths.map((filePath) => {
+  if (result.canceled) return { items: [], warnings: [] };
+
+  const items: MediaItem[] = [];
+  const warnings: string[] = [];
+
+  for (const filePath of result.filePaths) {
     const ext = path.extname(filePath).toLowerCase();
     const isVideo = ['.mp4', '.webm', '.mov', '.mkv'].includes(ext);
-    return {
+    const name = path.basename(filePath);
+    let resolvedPath = filePath;
+
+    if (isVideo) {
+      // Electron/Chromium only decodes h264/vp8/vp9/av1 — anything else (HEVC above all, the
+      // default on iPhone recordings) renders blank with no visual signal. Transcode proactively
+      // so a volunteer never has to know or care what codec their phone used.
+      const codec = await probeVideoCodec(filePath);
+      if (needsTranscode(codec)) {
+        try {
+          resolvedPath = await transcodeToH264(filePath);
+        } catch (err) {
+          warnings.push(`${name}: couldn't convert (${codec ?? 'unreadable'}) — ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+    }
+
+    items.push({
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      name: path.basename(filePath),
+      name,
       type: isVideo ? 'video' : 'image',
-      filePath: pathToFileURL(filePath).href,
+      filePath: pathToFileURL(resolvedPath).href,
       addedAt: Date.now(),
-    };
-  });
-  return items;
+    });
+  }
+
+  return { items, warnings };
 });
 
 ipcMain.handle(Channels.ImportSongsFiles, async () => {

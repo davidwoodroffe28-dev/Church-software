@@ -66,7 +66,7 @@ interface AppState {
   importEasyWorship: () => Promise<{ imported: number; errors: string[]; warning?: string }>;
 
   // Media
-  importMediaFiles: () => Promise<void>;
+  importMediaFiles: () => Promise<{ imported: number; warnings: string[] }>;
   deleteMedia: (id: string) => Promise<void>;
 
   // Themes (Templates)
@@ -398,12 +398,14 @@ export const useStore = create<AppState>((set, get) => ({
 
   importMediaFiles: async () => {
     const library = get().library;
-    if (!library) return;
-    const picked = await window.api.dialogs.pickMediaFiles();
-    if (!picked.length) return;
-    const media = [...library.media, ...picked];
-    await window.api.library.saveMedia(media);
-    set({ library: { ...library, media } });
+    if (!library) return { imported: 0, warnings: [] };
+    const { items, warnings } = await window.api.dialogs.pickMediaFiles();
+    if (items.length) {
+      const media = [...library.media, ...items];
+      await window.api.library.saveMedia(media);
+      set({ library: { ...library, media } });
+    }
+    return { imported: items.length, warnings };
   },
 
   deleteMedia: async (id) => {

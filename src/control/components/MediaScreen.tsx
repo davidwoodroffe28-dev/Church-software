@@ -14,6 +14,8 @@ export function MediaScreen() {
   const [filter, setFilter] = useState<Filter>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   if (!library) return null;
@@ -24,6 +26,15 @@ export function MediaScreen() {
   function select(item: MediaItem) {
     setSelectedId(item.id);
     setPlaying(false);
+  }
+
+  async function handleImport() {
+    setImporting(true);
+    setImportStatus(null);
+    const { imported, warnings } = await importMediaFiles();
+    setImporting(false);
+    if (warnings.length) setImportStatus(warnings.join(' '));
+    else if (imported) setImportStatus(null);
   }
 
   function togglePlay() {
@@ -43,8 +54,9 @@ export function MediaScreen() {
       <div className="media-main-column">
         <div className="column-header">
           <span className="mono column-title">MEDIA</span>
-          <button onClick={importMediaFiles}>+ Add media…</button>
+          <button onClick={handleImport} disabled={importing}>{importing ? 'Converting…' : '+ Add media…'}</button>
         </div>
+        {importStatus && <p className="hint">{importStatus}</p>}
 
         <div className="filter-pills">
           <button className={'filter-pill' + (filter === 'all' ? ' filter-pill-active' : '')} onClick={() => setFilter('all')}>ALL</button>

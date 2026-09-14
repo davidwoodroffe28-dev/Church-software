@@ -23,6 +23,8 @@ export function BackgroundsScreen() {
   const countdown = useStore((s) => s.countdown);
 
   const [filter, setFilter] = useState<Filter>('all');
+  const [importing, setImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
 
   if (!library) return null;
 
@@ -33,6 +35,14 @@ export function BackgroundsScreen() {
     setBackgroundOverride({ type: m.type, value: m.filePath });
   }
 
+  async function handleImport() {
+    setImporting(true);
+    setImportStatus(null);
+    const { warnings } = await importMediaFiles();
+    setImporting(false);
+    if (warnings.length) setImportStatus(warnings.join(' '));
+  }
+
   const { current } = computeCurrentAndNext(useStore.getState);
 
   return (
@@ -40,8 +50,9 @@ export function BackgroundsScreen() {
       <div className="media-main-column">
         <div className="column-header">
           <span className="mono column-title">BACKGROUNDS</span>
-          <button onClick={importMediaFiles}>+ Add media…</button>
+          <button onClick={handleImport} disabled={importing}>{importing ? 'Converting…' : '+ Add media…'}</button>
         </div>
+        {importStatus && <p className="hint">{importStatus}</p>}
         <div className="hint">
           Click a background to apply it live, underneath whatever song, scripture, or lower-third is currently
           showing — it stays applied as you move through the service, no need to add it to the schedule.

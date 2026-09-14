@@ -60,7 +60,7 @@ export interface ControlApi {
     saveOutputConfigs: (configs: OutputConfig[]) => Promise<boolean>;
   };
   dialogs: {
-    pickMediaFiles: () => Promise<MediaItem[]>;
+    pickMediaFiles: () => Promise<{ items: MediaItem[]; warnings: string[] }>;
   };
   songs: {
     importFiles: () => Promise<SongImportResult>;

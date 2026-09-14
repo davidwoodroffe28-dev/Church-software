@@ -239,14 +239,25 @@ function MediaFilter({ query }: { query: string }) {
   const importMediaFiles = useStore((s) => s.importMediaFiles);
   const deleteMedia = useStore((s) => s.deleteMedia);
   const addPlaylistItem = useStore((s) => s.addPlaylistItem);
+  const [importing, setImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
 
   const media = (library?.media ?? []).filter((m) => m.name.toLowerCase().includes(query.toLowerCase()));
+
+  async function handleImport() {
+    setImporting(true);
+    setImportStatus(null);
+    const { warnings } = await importMediaFiles();
+    setImporting(false);
+    if (warnings.length) setImportStatus(warnings.join(' '));
+  }
 
   return (
     <div className="library-tab-body">
       <div className="import-row">
-        <button onClick={importMediaFiles}>+ Add media…</button>
+        <button onClick={handleImport} disabled={importing}>{importing ? 'Converting…' : '+ Add media…'}</button>
       </div>
+      {importStatus && <p className="hint">{importStatus}</p>}
       {media.map((m) => (
         <LibraryRow
           key={m.id}

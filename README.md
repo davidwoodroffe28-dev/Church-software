@@ -128,6 +128,18 @@ The bundled translations in `resources/bible/` come from a Bible SuperSearch exp
 purposes" — check the license terms for the specific translation(s) you ship with (the NET Bible in
 particular has its own attribution/usage terms) before distributing this app commercially.
 
+## Third-party licenses
+
+- **FFmpeg** — bundled via `ffmpeg-static`/`ffprobe-static` to auto-convert imported video loops
+  that use a codec Electron/Chromium can't decode (e.g. HEVC/H.265) into browser-safe H.264/AAC
+  MP4. FFmpeg is GPL-licensed; it's invoked here as a standalone external binary via
+  `child_process.execFile` (never linked into this app's own code), the standard "mere
+  aggregation" pattern GPL explicitly permits and the same one already used for LibreOffice above.
+  Source: https://ffmpeg.org/.
+- **LibreOffice** — an optional, separately-installed external program (not bundled) invoked the
+  same way (`soffice --headless`) for pixel-accurate PowerPoint conversion. See **PowerPoint
+  import** above.
+
 ## Known limitations / possible follow-ups
 
 - The no-LibreOffice PowerPoint fallback doesn't resolve slide-layout/master inheritance, grouped

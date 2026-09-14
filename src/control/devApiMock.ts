@@ -125,7 +125,7 @@ export function installDevApiMock() {
       saveOutputConfigs: async () => true,
     },
     dialogs: {
-      pickMediaFiles: async () => [],
+      pickMediaFiles: async () => ({ items: [], warnings: [] }),
     },
     songs: {
       importFiles: async () => ({ songs: [], errors: [] }),
