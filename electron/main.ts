@@ -199,6 +199,10 @@ ipcMain.handle(Channels.SaveOutputConfigs, (_e, outputConfigs: OutputConfig[]) =
   syncOutputWindows();
   return true;
 });
+ipcMain.handle(Channels.SaveLogoMediaId, (_e, logoMediaId: string | null) => {
+  store.set('logoMediaId', logoMediaId);
+  return true;
+});
 
 ipcMain.handle(Channels.PickMediaFiles, async () => {
   if (!controlWindow) return { items: [], warnings: [] };

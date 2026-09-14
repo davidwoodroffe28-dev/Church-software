@@ -1,4 +1,4 @@
-# Church Presenter
+# Sanctuary
 
 Church media presentation software (EasyWorship-style): song lyrics, media backgrounds, Bible verses,
 PowerPoint slides, and lower-thirds — driven from a control window, displayed on one or more output

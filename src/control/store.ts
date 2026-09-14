@@ -47,6 +47,9 @@ interface AppState {
   preServiceLoop: { active: boolean; intervalSec: number };
   countdown: { durationSec: number; remainingSec: number; running: boolean; endAt: number | null; showOnProgram: boolean };
   backgroundOverride: Background | null;
+  /** Live screen's "Logo" toggle — shows library.logoMediaId full-screen on Program instead of
+   *  whatever's live, until dismissed (explicitly, or automatically by advancing/going live). */
+  logoActive: boolean;
 
   load: () => Promise<void>;
   toggleTheme: () => void;
@@ -138,6 +141,10 @@ interface AppState {
   // is live without that item needing its own theme set up first.
   setBackgroundOverride: (bg: Background | null) => void;
   clearBackgroundOverride: () => void;
+
+  // Live screen "Logo" toggle
+  toggleLogo: () => void;
+  setLogoMedia: (mediaId: string | null) => Promise<void>;
 }
 
 /** The single source of truth for "what does the room actually see right now," reused by the real
@@ -157,6 +164,15 @@ export function computeCurrentAndNext(get: () => AppState): { current: LiveSlide
       ? { kind: 'countdown', countdownEndAt: state.countdown.endAt ?? undefined }
       : { kind: 'countdown', countdownRemainingSec: state.countdown.remainingSec };
     return { current };
+  }
+
+  // The Logo toggle is the same kind of deliberate override — while it's on, it IS the program
+  // output regardless of what's staged/live underneath, same as the countdown above.
+  if (state.logoActive && library.logoMediaId) {
+    const media = library.media.find((m) => m.id === library.logoMediaId);
+    if (media) {
+      return { current: { kind: 'media', label: 'Logo', background: { type: media.type, value: media.filePath } } };
+    }
   }
 
   const playlist = state.activePlaylist();
@@ -259,6 +275,13 @@ function dismissCountdownOverlay(get: () => AppState, set: (partial: Partial<App
   if (get().countdown.showOnProgram) set({ countdown: { ...get().countdown, showOnProgram: false } });
 }
 
+/** Mirrors dismissCountdownOverlay: once the operator explicitly advances/goes live, they clearly
+ *  want that content shown — without this, Logo would keep silently overriding it and "Send to
+ *  Live" would look like it did nothing. */
+function dismissLogoOverlay(get: () => AppState, set: (partial: Partial<AppState>) => void) {
+  if (get().logoActive) set({ logoActive: false });
+}
+
 const SCHEDULE_UNDO_LIMIT = 50;
 
 /** Captures the active playlist's current items onto the undo stack and clears redo — called at
@@ -292,6 +315,7 @@ export const useStore = create<AppState>((set, get) => ({
   preServiceLoop: { active: false, intervalSec: 8 },
   countdown: { durationSec: 300, remainingSec: 300, running: false, endAt: null, showOnProgram: false },
   backgroundOverride: null,
+  logoActive: false,
 
   setActiveScreen: (screen) => set({ activeScreen: screen }),
 
@@ -657,6 +681,7 @@ export const useStore = create<AppState>((set, get) => ({
   stepLive: (direction) => {
     stopPreServiceLoopTimer(get, set);
     dismissCountdownOverlay(get, set);
+    dismissLogoOverlay(get, set);
     const { liveItemId, liveSubIndex, library } = get();
     const playlist = get().activePlaylist();
     if (!liveItemId || !library || !playlist) return;
@@ -688,6 +713,7 @@ export const useStore = create<AppState>((set, get) => ({
   stepLiveWithinItem: (direction) => {
     stopPreServiceLoopTimer(get, set);
     dismissCountdownOverlay(get, set);
+    dismissLogoOverlay(get, set);
     const { liveItemId, liveSubIndex, library } = get();
     const playlist = get().activePlaylist();
     if (!liveItemId || !library || !playlist) return;
@@ -704,6 +730,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (!get().liveItemId) return;
     stopPreServiceLoopTimer(get, set);
     dismissCountdownOverlay(get, set);
+    dismissLogoOverlay(get, set);
     set({ liveSubIndex: subIndex, liveTextVisible: true, liveBackgroundVisible: true });
     sendProgramState(get);
   },
@@ -711,6 +738,7 @@ export const useStore = create<AppState>((set, get) => ({
   goLive: async () => {
     stopPreServiceLoopTimer(get, set);
     dismissCountdownOverlay(get, set);
+    dismissLogoOverlay(get, set);
     const { selection } = get();
     if (!selection.itemId) return;
     set({
@@ -725,6 +753,7 @@ export const useStore = create<AppState>((set, get) => ({
   clearLive: async () => {
     stopPreServiceLoopTimer(get, set);
     dismissCountdownOverlay(get, set);
+    dismissLogoOverlay(get, set);
     set({ liveItemId: null, liveSubIndex: 0, liveTextVisible: true, liveBackgroundVisible: true });
     await window.api.live.clear();
   },
@@ -834,6 +863,18 @@ export const useStore = create<AppState>((set, get) => ({
   clearBackgroundOverride: () => {
     set({ backgroundOverride: null });
     sendProgramState(get);
+  },
+
+  toggleLogo: () => {
+    set({ logoActive: !get().logoActive });
+    sendProgramState(get);
+  },
+
+  setLogoMedia: async (mediaId) => {
+    const library = get().library;
+    if (!library) return;
+    await window.api.library.saveLogoMediaId(mediaId);
+    set({ library: { ...library, logoMediaId: mediaId } });
   },
 }));
 

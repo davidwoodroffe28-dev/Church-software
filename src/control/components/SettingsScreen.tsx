@@ -127,6 +127,10 @@ function RemoteSettingsPanel() {
 function AppearanceSettingsPanel() {
   const theme = useStore((s) => s.theme);
   const toggleTheme = useStore((s) => s.toggleTheme);
+  const library = useStore((s) => s.library);
+  const setLogoMedia = useStore((s) => s.setLogoMedia);
+
+  const images = library?.media.filter((m) => m.type === 'image') ?? [];
 
   return (
     <div className="settings-panel">
@@ -138,6 +142,27 @@ function AppearanceSettingsPanel() {
             <div className="settings-row-label">Light theme</div>
             <div className="hint">Switch between dark and light interface colours. Slide monitors always stay dark.</div>
           </div>
+        </div>
+      </div>
+      <div className="settings-row">
+        <div className="settings-row-main">
+          <div className="settings-row-text">
+            <div className="settings-row-label">Program logo</div>
+            <div className="hint">
+              The image the Live screen's Logo button shows full-screen on Program — import it from the Media tab
+              first, then pick it here.
+            </div>
+          </div>
+        </div>
+        <div className="settings-row-controls">
+          <select value={library?.logoMediaId ?? ''} onChange={(e) => setLogoMedia(e.target.value || null)} disabled={!images.length}>
+            <option value="">{images.length ? 'None' : 'No images imported yet'}</option>
+            {images.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
     </div>

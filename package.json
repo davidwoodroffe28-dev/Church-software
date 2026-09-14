@@ -4,8 +4,7 @@
   "description": "Church media presentation software (lyrics, media backgrounds, Bible verses, lower thirds, playlists) for live worship display.",
   "private": true,
   "author": {
-    "name": "Church Presenter",
-    "email": "noreply@example.com"
+    "name": "New Testament Church of God, Barbados"
   },
   "main": "dist-electron/electron/main.js",
   "type": "commonjs",

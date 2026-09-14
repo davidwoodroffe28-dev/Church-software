@@ -32,6 +32,9 @@ export function LiveScreen() {
   const toggleBlack = useStore((s) => s.toggleBlack);
   const undoSchedule = useStore((s) => s.undoSchedule);
   const redoSchedule = useStore((s) => s.redoSchedule);
+  const logoActive = useStore((s) => s.logoActive);
+  const toggleLogo = useStore((s) => s.toggleLogo);
+  const logoMediaId = useStore((s) => s.library?.logoMediaId ?? null);
 
   const previewItem = playlist?.items.find((i) => i.id === selection.itemId) ?? null;
   const liveItem = playlist?.items.find((i) => i.id === liveItemId) ?? null;
@@ -135,7 +138,12 @@ export function LiveScreen() {
               >
                 Clear
               </button>
-              <button className="toggle-btn" disabled title="Logo output — coming soon">
+              <button
+                className={'toggle-btn' + (logoActive ? ' toggle-btn-active' : '')}
+                onClick={toggleLogo}
+                disabled={!logoMediaId}
+                title={logoMediaId ? 'Show/hide the logo full-screen on Program, over whatever is live' : 'Set a logo image first — Settings → Appearance'}
+              >
                 Logo
               </button>
             </>

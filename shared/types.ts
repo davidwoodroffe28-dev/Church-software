@@ -209,4 +209,6 @@ export interface LibraryData {
   templates: Template[];
   presentations: Presentation[];
   outputConfigs: OutputConfig[];
+  /** MediaItem id used for the Live screen's "Logo" toggle (Settings → Appearance) — null until set. */
+  logoMediaId: string | null;
 }

@@ -123,6 +123,7 @@ const defaults: LibraryData = {
   templates: defaultTemplates,
   presentations: [],
   outputConfigs: defaultOutputConfigs,
+  logoMediaId: null,
 };
 
 export const store = new Store<LibraryData>({
@@ -140,5 +141,6 @@ export function getLibrary(): LibraryData {
     templates: store.get('templates'),
     presentations: store.get('presentations'),
     outputConfigs: store.get('outputConfigs'),
+    logoMediaId: store.get('logoMediaId', null),
   };
 }

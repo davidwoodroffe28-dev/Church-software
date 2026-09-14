@@ -22,5 +22,12 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    // Without this, an electron-builder run (dist:win/dist:mac/dist:linux) while `npm run dev` is
+    // still up writes thousands of files under release/, and Vite's watcher treats every one as a
+    // reason to full-reload the running app — wiping in-progress UI state (e.g. a Settings pick)
+    // for no reason related to the actual source code.
+    watch: {
+      ignored: ['**/release/**', '**/dist-electron/**'],
+    },
   },
 });
