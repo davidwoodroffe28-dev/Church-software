@@ -32,7 +32,83 @@ const defaultTemplates: Template[] = [
     textAlign: 'left',
     lowerThird: true,
   },
+  // A handful of built-in gradient backdrops — generated, not downloaded, so there's no
+  // third-party licensing question (unlike stock video loops, most of which forbid redistributing
+  // the raw file inside another product even when labelled "free"). Background.value is passed
+  // straight into a CSS `background` shorthand, which accepts a gradient string same as a colour.
+  {
+    id: 'theme-midnight-blue',
+    name: 'Midnight Blue',
+    background: { type: 'color', value: 'linear-gradient(160deg, #0d2a45, #060c14)' },
+    fontFamily: 'Georgia, serif',
+    fontSize: 64,
+    textColor: '#ffffff',
+    textAlign: 'center',
+    lowerThird: false,
+  },
+  {
+    id: 'theme-warm-amber',
+    name: 'Warm Amber',
+    background: { type: 'color', value: 'linear-gradient(160deg, #3a230c, #120904)' },
+    fontFamily: 'Georgia, serif',
+    fontSize: 64,
+    textColor: '#ffffff',
+    textAlign: 'center',
+    lowerThird: false,
+  },
+  {
+    id: 'theme-deep-purple',
+    name: 'Deep Purple',
+    background: { type: 'color', value: 'linear-gradient(160deg, #24123a, #0a0512)' },
+    fontFamily: 'Georgia, serif',
+    fontSize: 64,
+    textColor: '#ffffff',
+    textAlign: 'center',
+    lowerThird: false,
+  },
+  {
+    id: 'theme-forest-green',
+    name: 'Forest Green',
+    background: { type: 'color', value: 'linear-gradient(160deg, #0c3a23, #04120a)' },
+    fontFamily: 'Georgia, serif',
+    fontSize: 64,
+    textColor: '#ffffff',
+    textAlign: 'center',
+    lowerThird: false,
+  },
+  {
+    id: 'theme-charcoal',
+    name: 'Charcoal',
+    background: { type: 'color', value: 'linear-gradient(160deg, #2a2a2e, #101012)' },
+    fontFamily: 'Georgia, serif',
+    fontSize: 64,
+    textColor: '#ffffff',
+    textAlign: 'center',
+    lowerThird: false,
+  },
+  {
+    id: 'theme-ntcg-brand',
+    name: 'NTCG Brand',
+    // A toned-down, darkened version of the church's own #1B75BB (see DESIGN-SPEC.md §2) — full
+    // brightness would fight with lyric text, but a dark-to-navy gradient still reads as "theirs."
+    background: { type: 'color', value: 'linear-gradient(160deg, #123c56, #05141d)' },
+    fontFamily: 'Georgia, serif',
+    fontSize: 64,
+    textColor: '#ffffff',
+    textAlign: 'center',
+    lowerThird: false,
+  },
 ];
+
+/** electron-store's `defaults` only seed a key the first time it doesn't exist on disk — adding
+ *  entries here does nothing for an install that already has a templates array saved. Called once
+ *  at startup so upgrading to a version with more built-in themes actually adds them. */
+function ensureBuiltInTemplates() {
+  const existing = store.get('templates');
+  const existingIds = new Set(existing.map((t) => t.id));
+  const missing = defaultTemplates.filter((t) => !existingIds.has(t.id));
+  if (missing.length) store.set('templates', [...existing, ...missing]);
+}
 
 const defaultOutputConfigs: OutputConfig[] = [
   { id: 'program-1', role: 'program', name: 'Program (Audience)', displayId: null, chromaKey: '#00ff00', enabled: true },
@@ -53,6 +129,8 @@ export const store = new Store<LibraryData>({
   name: 'church-presenter-library',
   defaults,
 });
+
+ensureBuiltInTemplates();
 
 export function getLibrary(): LibraryData {
   return {
