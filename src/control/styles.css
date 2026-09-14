@@ -45,7 +45,7 @@ button.primary {
   background-color: var(--accent);
   background-image: var(--control-highlight-strong);
   border-color: var(--accent);
-  color: var(--screen);
+  color: var(--on-accent);
   font-weight: 600;
 }
 button.primary:hover:not(:disabled) {
@@ -748,10 +748,10 @@ label {
 .send-to-live {
   flex: 1;
   height: 44px;
-  background-color: var(--accent);
+  background-color: var(--cta);
   background-image: var(--control-highlight-strong);
   border: none;
-  color: var(--screen);
+  color: var(--on-accent);
   font-weight: 600;
   font-size: 13.5px;
 }
@@ -1346,7 +1346,7 @@ label {
   background-color: var(--accent);
   background-image: var(--control-highlight-strong);
   border-color: var(--accent);
-  color: var(--screen);
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -1567,7 +1567,7 @@ label {
   background-color: var(--accent);
   background-image: var(--control-highlight-strong);
   border-color: var(--accent);
-  color: var(--screen);
+  color: var(--on-accent);
   font-weight: 600;
 }
 

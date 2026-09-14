@@ -61,7 +61,7 @@ const closingSong = song('Closing Song', '', [
 const placeholderImage =
   'data:image/svg+xml,' +
   encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#23272d"/><rect x="240" y="130" width="160" height="100" rx="8" fill="none" stroke="#3fb6bf" stroke-width="6"/><path d="M290 160 L330 180 L290 200 Z" fill="#3fb6bf"/></svg>'
+    '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#23272d"/><rect x="240" y="130" width="160" height="100" rx="8" fill="none" stroke="#1b75bb" stroke-width="6"/><path d="M290 160 L330 180 L290 200 Z" fill="#1b75bb"/></svg>'
   );
 
 const library: LibraryData = {

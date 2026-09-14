@@ -518,7 +518,7 @@ export const useStore = create<AppState>((set, get) => ({
   undoSchedule: async () => {
     const { scheduleUndoStack, scheduleRedoStack, library } = get();
     const playlist = get().activePlaylist();
-    const previous = scheduleUndoStack.at(-1);
+    const previous = scheduleUndoStack[scheduleUndoStack.length - 1];
     if (!previous || !library || !playlist) return;
     const playlists = library.playlists.map((p) => (p.id === playlist.id ? { ...p, items: previous, updatedAt: Date.now() } : p));
     await window.api.library.savePlaylists(playlists);
@@ -532,7 +532,7 @@ export const useStore = create<AppState>((set, get) => ({
   redoSchedule: async () => {
     const { scheduleUndoStack, scheduleRedoStack, library } = get();
     const playlist = get().activePlaylist();
-    const next = scheduleRedoStack.at(-1);
+    const next = scheduleRedoStack[scheduleRedoStack.length - 1];
     if (!next || !library || !playlist) return;
     const playlists = library.playlists.map((p) => (p.id === playlist.id ? { ...p, items: next, updatedAt: Date.now() } : p));
     await window.api.library.savePlaylists(playlists);

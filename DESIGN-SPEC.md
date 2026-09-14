@@ -36,9 +36,15 @@ Both themes are built from one token set. Never hard-code a colour outside it.
 | `--ink3` | `#8b939d` | `#6e7783` | Metadata, mono labels (min 4.5:1) |
 | `--hover` | `#282d34` | `#e9ecef` | Hover fill on any clickable row |
 | `--input` | `#13161a` | `#ffffff` | Text field interiors |
-| `--accent` | `#3fb6bf` | `#3fb6bf` | Selection, focus, primary action |
+| `--accent` | `#1B75BB` | `#1B75BB` | Selection, focus, secondary actions — New Testament Church of God Barbados brand blue |
+| `--on-accent` | `#ffffff` | `#ffffff` | Text/icons sitting on an `--accent` or `--cta` fill (both are mid-tone; dark text failed contrast) |
+| `--cta` | `#F6921E` | `#F6921E` | The single "Send to Live →" control only — NTCG Barbados brand orange |
 | `--live` | `#c9564f` | `#b8453d` | On-air state only |
 | `--screen` | `#0c0e11` | `#15181c` | Inside a slide monitor — always dark, both themes |
+
+`--accent`/`--cta` are sourced from newtestamentbarbados.com's own stylesheet (`#1B75BB`/`#F6921E`,
+the two colours actually used there for buttons/links/headers) — this app is built for that
+congregation, so its brand wins over an invented palette.
 
 **Rules**
 
@@ -46,8 +52,12 @@ Both themes are built from one token set. Never hard-code a colour outside it.
   Not for delete, not for errors, not for emphasis.
 - `--accent` marks *your* selection — the verse you are staging, the active tab,
   the chosen font. It never means "live".
+- `--cta` marks the one control that crosses into live (Principle 1) — "Send to Live →"
+  and nothing else. Having its own colour, distinct from `--accent`, is what makes that
+  one button visually unmistakable from ordinary selection state.
 - Item-type stripes in the service list are fixed and are the only other hues:
-  Song `#3fb6bf`, Scripture `#c9a55e`, Media `#8f7ed6`, Slides `#79b56a`.
+  Song `#1B75BB` (matches `--accent` — songs are the most common item), Scripture `#c9a55e`,
+  Media `#8f7ed6`, Slides `#79b56a`.
 - Max two background values per screen (`--bg` and `--panel`). No gradients.
 - Slide monitors stay dark in light mode — the room is dark, so the preview must match.
 

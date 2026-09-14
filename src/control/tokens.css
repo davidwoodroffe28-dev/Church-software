@@ -11,12 +11,15 @@
   --ink3: #8b939d;
   --hover: #282d34;
   --input: #13161a;
-  --accent: #3fb6bf;
+  /* Brand colours sourced from newtestamentbarbados.com's own stylesheet. */
+  --accent: #1b75bb;
+  --on-accent: #ffffff;
+  --cta: #f6921e;
   --live: #c9564f;
   --screen: #0c0e11;
 
   /* Item-type stripes — fixed hues, the only other colours on screen, same in both themes. */
-  --type-song: #3fb6bf;
+  --type-song: #1b75bb;
   --type-scripture: #c9a55e;
   --type-media: #8f7ed6;
   --type-slides: #79b56a;

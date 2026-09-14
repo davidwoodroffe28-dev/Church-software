@@ -75,7 +75,7 @@ function remotePageHtml(): string {
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body { margin: 0; background: #16181c; color: #e9ebee; font-family: -apple-system, system-ui, sans-serif; min-height: 100vh; display: flex; flex-direction: column; padding: 16px; gap: 14px; }
   .status { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #8b939d; text-align: center; }
-  .status.connected { color: #3fb6bf; }
+  .status.connected { color: #1b75bb; }
   .panel { background: #1c1f24; border-radius: 14px; padding: 18px; }
   .tag { font-size: 10px; letter-spacing: .1em; color: #8b939d; margin-bottom: 6px; }
   .live .tag { color: #c9564f; }
