@@ -340,8 +340,15 @@ label {
 
 .live-screen {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+.live-screen-top {
+  flex: 1;
   display: grid;
-  grid-template-columns: 306px 1fr 338px;
+  grid-template-columns: 306px 1fr 1fr;
   min-height: 0;
   width: 100%;
 }
@@ -402,16 +409,25 @@ label {
 /* ---------- library column ---------- */
 
 .library-column {
-  border-right: 1px solid var(--line);
+  border-top: 1px solid var(--line);
   background: var(--panel);
-  padding: var(--sp-5);
+  padding: var(--sp-4) var(--sp-5);
   display: flex;
   flex-direction: column;
+  gap: var(--sp-3);
+  height: 300px;
+  flex-shrink: 0;
+}
+.library-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--sp-4);
-  min-height: 0;
+  flex-shrink: 0;
 }
 .library-search {
-  width: 100%;
+  width: 240px;
+  flex-shrink: 0;
 }
 .filter-pills {
   display: flex;
@@ -517,6 +533,7 @@ label {
 /* ---------- service column ---------- */
 
 .service-column {
+  border-right: 1px solid var(--line);
   background: var(--panel);
   padding: var(--sp-5);
   display: flex;
@@ -623,11 +640,6 @@ label {
 
 /* ---------- preview / live panes ---------- */
 
-.preview-live-split {
-  border-right: 1px solid var(--line);
-  display: flex;
-  min-height: 0;
-}
 .slide-pane {
   flex: 1;
   padding: var(--sp-4);

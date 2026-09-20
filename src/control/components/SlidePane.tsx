@@ -6,6 +6,10 @@ import { SlideView } from '../../shared-ui/SlideView';
 
 interface Props {
   kind: 'preview' | 'live';
+  /** 'list' shows the slide-row list without the big monitor (Preview); 'monitor' shows the big
+   *  monitor without the list (Live) — matching the reference layout's Preview/Live Output split.
+   *  Defaults to showing both, for callers that want the combined view. */
+  variant?: 'list' | 'monitor' | 'both';
   item: PlaylistItem | null;
   activeSubIndex: number;
   onSelectSub: (idx: number) => void;
@@ -23,11 +27,11 @@ interface Props {
   onAir?: boolean;
 }
 
-/** Preview and Live are the same vertical stack — header, slide list, transport, monitor — so both
- *  panes render from this one component. Keeping the pairing visually identical is what makes it
- *  readable at a glance (DESIGN-SPEC.md §5). */
+/** Preview and Live share the same header/title/transport shell; `variant` picks which of the
+ *  slide-row list and the big monitor actually renders inside it. */
 export function SlidePane({
   kind,
+  variant = 'both',
   item,
   activeSubIndex,
   onSelectSub,
@@ -67,28 +71,30 @@ export function SlidePane({
       </div>
       <div className="slide-pane-title">{item?.label ?? '—'}</div>
 
-      <div className="slide-row-list">
-        {rows.length === 0 && <div className="slide-row-empty">Nothing staged yet.</div>}
-        {rows.map(({ idx, slide }) => {
-          const isActive = idx === activeSubIndex;
-          const verseLabel = slide.label?.split('—').pop()?.trim() || `Slide ${idx + 1}`;
-          return (
-            <button
-              key={idx}
-              className={'slide-row' + (isActive ? ` slide-row-active-${kind}` : '')}
-              onClick={() => onSelectSub(idx)}
-              onDoubleClick={onSelectSubDouble ? () => onSelectSubDouble(idx) : undefined}
-              title={onSelectSubDouble ? 'Click to stage · double-click to go live immediately' : undefined}
-            >
-              <span className="mono slide-row-tag">
-                {isActive && kind === 'live' && <span className="live-blip" />}
-                {verseLabel.toUpperCase()}
-              </span>
-              <span className="slide-row-text">{slide.text ?? item?.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      {variant !== 'monitor' && (
+        <div className="slide-row-list">
+          {rows.length === 0 && <div className="slide-row-empty">Nothing staged yet.</div>}
+          {rows.map(({ idx, slide }) => {
+            const isActive = idx === activeSubIndex;
+            const verseLabel = slide.label?.split('—').pop()?.trim() || `Slide ${idx + 1}`;
+            return (
+              <button
+                key={idx}
+                className={'slide-row' + (isActive ? ` slide-row-active-${kind}` : '')}
+                onClick={() => onSelectSub(idx)}
+                onDoubleClick={onSelectSubDouble ? () => onSelectSubDouble(idx) : undefined}
+                title={onSelectSubDouble ? 'Click to stage · double-click to go live immediately' : undefined}
+              >
+                <span className="mono slide-row-tag">
+                  {isActive && kind === 'live' && <span className="live-blip" />}
+                  {verseLabel.toUpperCase()}
+                </span>
+                <span className="slide-row-text">{slide.text ?? item?.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="slide-pane-transport">
         <button className="transport-btn" onClick={() => onStep(-1)} disabled={!item} title="Previous">
@@ -104,9 +110,11 @@ export function SlidePane({
         {actions}
       </div>
 
-      <div className={'slide-monitor' + (onAir ? ' slide-monitor-onair' : '')}>
-        <SlideView slide={activeSlide} mode="full" textVisible={textVisible} backgroundVisible={backgroundVisible} />
-      </div>
+      {variant !== 'list' && (
+        <div className={'slide-monitor' + (onAir ? ' slide-monitor-onair' : '')}>
+          <SlideView slide={activeSlide} mode="full" textVisible={textVisible} backgroundVisible={backgroundVisible} />
+        </div>
+      )}
     </div>
   );
 }

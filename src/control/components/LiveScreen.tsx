@@ -89,11 +89,12 @@ export function LiveScreen() {
 
   return (
     <div className="live-screen">
-      <LibraryColumn />
+      <div className="live-screen-top">
+        <ServiceColumn />
 
-      <div className="preview-live-split">
         <SlidePane
           kind="preview"
+          variant="list"
           item={previewItem}
           activeSubIndex={selection.subIndex}
           onSelectSub={(idx) => previewItem && select(previewItem.id, idx)}
@@ -112,6 +113,7 @@ export function LiveScreen() {
 
         <SlidePane
           kind="live"
+          variant="monitor"
           item={liveItem}
           activeSubIndex={liveSubIndex}
           onSelectSub={setLiveSubIndex}
@@ -151,7 +153,7 @@ export function LiveScreen() {
         />
       </div>
 
-      <ServiceColumn />
+      <LibraryColumn />
     </div>
   );
 }

@@ -34,30 +34,28 @@ export function LibraryColumn() {
 
   return (
     <div className="library-column">
-      <div className="column-header">
-        <span className="mono column-title">LIBRARY</span>
-      </div>
+      <div className="library-header">
+        <div className="filter-pills">
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              className={'filter-pill' + (filter === f.id ? ' filter-pill-active' : '')}
+              style={filter === f.id ? { borderColor: f.color } : undefined}
+              onClick={() => setFilter(f.id)}
+            >
+              {f.label.toUpperCase()}
+            </button>
+          ))}
+        </div>
 
-      {filter !== 'scripture' && (
-        <input
-          className="library-search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={`Search ${filter}…`}
-        />
-      )}
-
-      <div className="filter-pills">
-        {FILTERS.map((f) => (
-          <button
-            key={f.id}
-            className={'filter-pill' + (filter === f.id ? ' filter-pill-active' : '')}
-            style={filter === f.id ? { borderColor: f.color } : undefined}
-            onClick={() => setFilter(f.id)}
-          >
-            {f.label.toUpperCase()}
-          </button>
-        ))}
+        {filter !== 'scripture' && (
+          <input
+            className="library-search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`Search ${filter}…`}
+          />
+        )}
       </div>
 
       <div className="library-list" ref={setListEl}>
