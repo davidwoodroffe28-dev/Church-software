@@ -194,8 +194,9 @@ export interface OutputConfig {
   id: string;
   role: OutputRole;
   name: string;
-  /** Physical display id to place this output fullscreen on; null = leave as a regular window
-   *  (e.g. for OBS/vMix Window Capture of the stream/lower-thirds output). */
+  /** Physical display id to place this output fullscreen on. When null: 'program'/'stage' auto-claim
+   *  the next connected external display (and open no window at all until one is plugged in); 'stream'
+   *  stays a regular window instead, since that's a deliberate OBS/vMix Window Capture target. */
   displayId: number | null;
   /** Chroma-key background color used by the 'stream' role so it can be keyed out in OBS/vMix. */
   chromaKey: string;

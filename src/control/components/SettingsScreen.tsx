@@ -87,7 +87,7 @@ function OutputsSettingsPanel() {
               onChange={(e) => update(c.id, { displayId: e.target.value ? Number(e.target.value) : null })}
               disabled={!c.enabled}
             >
-              <option value="">Windowed</option>
+              <option value="">{c.role === 'stream' ? 'Windowed' : 'Auto (next connected display)'}</option>
               {displays.map((d) => (
                 <option key={d.id} value={d.id}>{d.label}</option>
               ))}

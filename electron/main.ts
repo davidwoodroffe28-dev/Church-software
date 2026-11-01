@@ -28,6 +28,9 @@ const appIconPath = path.join(
 
 let controlWindow: BrowserWindow | null = null;
 const outputWindows = new Map<string, BrowserWindow>();
+/** windowTargetKey() for each open output window, so syncOutputWindows can tell "still correct"
+ *  apart from "needs to move or change visibility". */
+const outputWindowTargets = new Map<string, string>();
 let lastProgramState: ProgramState = { current: { kind: 'blank' } };
 
 function loadRendererPage(win: BrowserWindow, page: 'index' | 'output', query = '') {
@@ -95,9 +98,51 @@ function notifyOutputStatus() {
   controlWindow?.webContents.send(Channels.OutputWindowStatus, computeOutputStatuses());
 }
 
-function createOutputWindow(config: OutputConfig) {
+/** Works out where each enabled output config should actually appear, in one pass so that
+ *  'program' and 'stage' auto-assigning to "the next external display" don't both claim the same
+ *  screen. displayId null means "pinned to a specific display" wasn't chosen:
+ *   - program/stage (physical outputs): auto-claim the next not-yet-claimed non-primary display,
+ *     in config order; no display available means no window at all (matches EasyWorship — the
+ *     in-app Live preview is the only "output" until a projector/monitor is actually connected).
+ *   - stream (OBS/vMix capture or NDI source): stays a plain window regardless of displays, since
+ *     that's the deliberate capture target, not a projector feed.
+ *  An explicit displayId that's since been unplugged resolves to undefined (window stays closed
+ *  until that display comes back) rather than falling back to a stray window on the main screen. */
+function resolveOutputTargets(configs: OutputConfig[]): Map<string, Electron.Display | 'windowed'> {
   const displays = screen.getAllDisplays();
-  const display = config.displayId != null ? displays.find((d) => d.id === config.displayId) : undefined;
+  const primaryId = screen.getPrimaryDisplay().id;
+  const claimed = new Set<number>();
+  const targets = new Map<string, Electron.Display | 'windowed'>();
+
+  for (const config of configs) {
+    if (!config.enabled) continue;
+    if (config.displayId != null) {
+      const explicit = displays.find((d) => d.id === config.displayId);
+      if (explicit) {
+        claimed.add(explicit.id);
+        targets.set(config.id, explicit);
+      }
+      continue;
+    }
+    if (config.role === 'stream') {
+      targets.set(config.id, 'windowed');
+      continue;
+    }
+    const next = displays.find((d) => d.id !== primaryId && !claimed.has(d.id));
+    if (next) {
+      claimed.add(next.id);
+      targets.set(config.id, next);
+    }
+  }
+  return targets;
+}
+
+function createOutputWindow(config: OutputConfig, target: Electron.Display | 'windowed') {
+  const display = target === 'windowed' ? undefined : target;
+  // Stream/lower-thirds sent purely over NDI has no reason to show a window on screen at all — NDI
+  // reads the rendered frames straight off webContents. A visible window here is only needed for
+  // the OBS/vMix Window Capture workflow, which has to find an actual on-screen window to grab.
+  const hidden = config.role === 'stream' && !display && !!config.ndiEnabled;
 
   const win = new BrowserWindow({
     x: display ? display.bounds.x + 40 : undefined,
@@ -106,6 +151,8 @@ function createOutputWindow(config: OutputConfig) {
     height: display ? display.bounds.height : 540,
     fullscreen: !!display && !isDev,
     frame: !display || isDev,
+    show: !hidden,
+    skipTaskbar: hidden,
     autoHideMenuBar: true,
     backgroundColor: config.role === 'stream' ? undefined : '#000000',
     transparent: config.role === 'stream',
@@ -117,6 +164,9 @@ function createOutputWindow(config: OutputConfig) {
       nodeIntegration: false,
       sandbox: false,
       autoplayPolicy: 'no-user-gesture-required',
+      // Keeps rendering (animations, lyric transitions) at full rate while hidden — a backgrounded
+      // renderer is throttled by default, which would make the NDI-only feed above stutter.
+      backgroundThrottling: false,
       // See createControlWindow's webSecurity comment — output windows load output.html from the
       // same Vite dev server in dev, so they need the same relaxation to play file:// media there.
       webSecurity: !isDev,
@@ -127,7 +177,12 @@ function createOutputWindow(config: OutputConfig) {
   loadRendererPage(win, 'output', query);
 
   win.on('closed', () => {
-    outputWindows.delete(config.id);
+    // Guard against a stale close: if a reassignment already replaced this map entry with a newer
+    // window for the same config.id (see syncOutputWindows), this late 'closed' must not delete it.
+    if (outputWindows.get(config.id) === win) {
+      outputWindows.delete(config.id);
+      outputWindowTargets.delete(config.id);
+    }
     notifyOutputStatus();
   });
   win.webContents.on('did-finish-load', () => {
@@ -136,21 +191,45 @@ function createOutputWindow(config: OutputConfig) {
   });
 
   outputWindows.set(config.id, win);
+  outputWindowTargets.set(config.id, windowTargetKey(config, target));
 }
 
-/** Reconciles running output windows against the persisted OutputConfig list: opens/closes/moves as needed. */
+/** Identifies "what this window should currently be" — which display (or 'windowed'), plus
+ *  whether it should be hidden — so syncOutputWindows can tell a real change (move to a different
+ *  display, or an NDI toggle that flips visibility) apart from "nothing to do". */
+function windowTargetKey(config: OutputConfig, target: Electron.Display | 'windowed'): string {
+  const base = target === 'windowed' ? 'windowed' : String(target.id);
+  const hidden = config.role === 'stream' && target === 'windowed' && !!config.ndiEnabled;
+  return hidden ? `${base}:hidden` : base;
+}
+
+/** Reconciles running output windows against the persisted OutputConfig list and the currently
+ *  connected displays: opens/closes/moves as needed. Called on config changes AND on every
+ *  display-added/display-removed, so plugging in a projector sends output there automatically and
+ *  unplugging it closes that window, with no manual re-assignment required. */
 function syncOutputWindows() {
   const configs = store.get('outputConfigs');
-  const wantedIds = new Set(configs.filter((c) => c.enabled).map((c) => c.id));
+  const configById = new Map(configs.map((c) => [c.id, c]));
+  const targets = resolveOutputTargets(configs);
 
   for (const [id, win] of outputWindows) {
-    if (!wantedIds.has(id)) {
+    const config = configById.get(id);
+    const target = targets.get(id);
+    const current = outputWindowTargets.get(id);
+    const wantedKey = target !== undefined && config ? windowTargetKey(config, target) : undefined;
+    // No longer wanted, moved to a different display, or an NDI toggle flipped its visibility.
+    // win.close() is async, so the map is updated here too — otherwise the create pass below would
+    // still see this (closing) window as "already open" and skip reopening it on the new target.
+    if (wantedKey !== current) {
       win.close();
+      outputWindows.delete(id);
+      outputWindowTargets.delete(id);
     }
   }
   for (const config of configs) {
-    if (config.enabled && !outputWindows.has(config.id)) {
-      createOutputWindow(config);
+    const target = targets.get(config.id);
+    if (target !== undefined && !outputWindows.has(config.id)) {
+      createOutputWindow(config, target);
     }
   }
   notifyOutputStatus();
@@ -174,6 +253,12 @@ app.whenReady().then(() => {
   createControlWindow();
   syncOutputWindows();
   startStreamEmbedServer();
+
+  // Projector/monitor plugged or unplugged — re-run the same reconciliation Settings → Outputs
+  // triggers, so program/stage outputs auto-claim a newly connected display (or let go of one
+  // that just disappeared) without the user touching anything.
+  screen.on('display-added', syncOutputWindows);
+  screen.on('display-removed', syncOutputWindows);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
