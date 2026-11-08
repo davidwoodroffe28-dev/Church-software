@@ -49,6 +49,13 @@ function cleanText(text: string): string {
 }
 
 function loadTranslation(code: string): LoadedTranslation {
+  // translationCode arrives over IPC straight from the renderer — reject anything that isn't one
+  // of the bundled translations before it reaches a file path, so a compromised/malicious renderer
+  // can't use it to read arbitrary files off disk (e.g. code = '../../../../some/other/file').
+  if (!TRANSLATIONS.some((t) => t.code === code)) {
+    throw new Error(`Unknown Bible translation code: ${code}`);
+  }
+
   const cached = cache.get(code);
   if (cached) return cached;
 
